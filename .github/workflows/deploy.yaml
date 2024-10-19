@@ -17,7 +17,7 @@ jobs:
       # yamatoya.github.ioリポジトリをクローン
       - name: Clone yamatoya.github.io Repository
         run: |
-          git clone https://${{ secrets.ACTIONS_DEPLOY_KEY }}@github.com/yamatoya/yamatoya.github.io.git deploy-repo
+          git clone https://${{ secrets.GITHUB_TOKEN }}@github.com/yamatoya/yamatoya.github.io.git deploy-repo
 
       # publicフォルダーの内容をコピー
       - name: Copy files to deploy-repo
@@ -28,12 +28,9 @@ jobs:
       # GitHubリポジトリへのコミットとプッシュ
       - name: Commit and Push Changes
         working-directory: deploy-repo
-        env:
-          GITHUB_TOKEN: ${{ secrets.ACTIONS_DEPLOY_KEY }}
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
           git add .
           git commit -m "Deploy from source repository" || echo "No changes to commit"
           git push origin main
-
