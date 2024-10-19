@@ -25,12 +25,14 @@ jobs:
           rm -rf deploy-repo/*
           cp -r public/* deploy-repo/
 
-      # yamatoya.github.ioリポジトリにコミット＆プッシュ
+      # GitHubリポジトリへのコミットとプッシュ
       - name: Commit and Push Changes
         working-directory: deploy-repo
+        env:
+          GITHUB_TOKEN: ${{ secrets.ACTIONS_DEPLOY_KEY }}
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
           git add .
-          git commit -m "Deploy from source repository"
-          git push https://${{ secrets.ACTIONS_DEPLOY_KEY }}@github.com/yamatoya/yamatoya.github.io.git
+          git commit -m "Deploy from source repository" || echo "No changes to commit"
+          git push origin main
