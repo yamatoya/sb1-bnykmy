@@ -36,3 +36,4 @@ jobs:
           git add .
           git commit -m "Deploy from source repository" || echo "No changes to commit"
           git push origin main
+
