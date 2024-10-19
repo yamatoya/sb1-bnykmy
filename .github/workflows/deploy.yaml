@@ -17,7 +17,7 @@ jobs:
       # yamatoya.github.ioリポジトリをクローン
       - name: Clone yamatoya.github.io Repository
         run: |
-          git clone https://yamatoya:${{ secrets.ACTIONS_DEPLOY_KEY }}@github.com/yamatoya/yamatoya.github.io.git deploy-repo
+          git clone https://${{ secrets.ACTIONS_DEPLOY_KEY }}@github.com/yamatoya/yamatoya.github.io.git deploy-repo
 
       # publicフォルダーの内容をコピー
       - name: Copy files to deploy-repo
@@ -33,4 +33,4 @@ jobs:
           git config --global user.email "actions@github.com"
           git add .
           git commit -m "Deploy from source repository"
-          git push
+          git push https://${{ secrets.ACTIONS_DEPLOY_KEY }}@github.com/yamatoya/yamatoya.github.io.git
