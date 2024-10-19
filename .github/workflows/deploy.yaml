@@ -8,6 +8,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: production  # 環境を指定
 
     steps:
       # リポジトリをチェックアウト
@@ -17,7 +18,7 @@ jobs:
       # yamatoya.github.ioリポジトリをクローン
       - name: Clone yamatoya.github.io Repository
         run: |
-          git clone https://${{ secrets.GITHUB_TOKEN }}@github.com/yamatoya/yamatoya.github.io.git deploy-repo
+          git clone https://${{ secrets.DEPLOY_TOKEN }}@github.com/yamatoya/yamatoya.github.io.git deploy-repo
 
       # publicフォルダーの内容をコピー
       - name: Copy files to deploy-repo
@@ -29,8 +30,8 @@ jobs:
       - name: Commit and Push Changes
         working-directory: deploy-repo
         run: |
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor }}@users.noreply.github.com"
           git add .
           git commit -m "Deploy from source repository" || echo "No changes to commit"
           git push origin main
