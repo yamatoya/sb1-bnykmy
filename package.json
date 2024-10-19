@@ -4,9 +4,9 @@
   "description": "A Twitter-like UI for managing legal documents",
   "main": "app.js",
   "scripts": {
-    "start": "node app.js",
-    "dev": "nodemon app.js",
-    "build": "node generate-static-files.js"
+    "start": "NODE_ENV=development node app.js",
+    "dev": "NODE_ENV=development nodemon app.js",
+    "build": "NODE_ENV=development node generate-static-files.js"
   },
   "dependencies": {
     "express": "^4.17.1",
