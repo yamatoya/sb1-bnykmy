@@ -24,7 +24,7 @@ jobs:
       - name: Copy files to deploy-repo
         run: |
           rm -rf deploy-repo/*
-          cp -r *
+          cp -r * deploy-repo/
 
       # GitHubリポジトリへのコミットとプッシュ
       - name: Commit and Push Changes
