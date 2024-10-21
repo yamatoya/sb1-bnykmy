@@ -12,26 +12,22 @@ jobs:
 
     steps:
       # リポジトリをチェックアウト
-      - name: Checkout Source Repository
-        uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v2
 
-      # yamatoya.github.ioリポジトリをクローン
-      - name: Clone yamatoya.github.io Repository
-        run: |
-          git clone https://${{ secrets.DEPLOY_TOKEN }}@github.com/yamatoya/yamatoya.github.io.git deploy-repo
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14'
 
-      # publicフォルダーの内容をコピー
-      - name: Copy files to deploy-repo
-        run: |
-          rm -rf deploy-repo/*
-          cp -r [!deploy-repo]* deploy-repo/
+      - name: Install dependencies
+        run: npm ci
 
-      # GitHubリポジトリへのコミットとプッシュ
-      - name: Commit and Push Changes
-        working-directory: deploy-repo
-        run: |
-          git config user.name "${{ github.actor }}"
-          git config user.email "${{ github.actor }}@users.noreply.github.com"
-          git add .
-          git commit -m "Deploy from source repository" || echo "No changes to commit"
-          git push origin main
+      - name: Build
+        run: npm run build
+
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.DEPLOY_TOKEN }}
+          publish_dir: ./dist
