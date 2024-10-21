@@ -1,36 +1,51 @@
-name: Deploy to yamatoya.github.io
+name: Deploy to GitHub Pages
 
 on:
   push:
     branches:
-      - main  # mainブランチが更新されたときに実行
+      - main
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
-    environment: production  # 環境を指定
-
     steps:
-      # リポジトリをチェックアウト
-      - name: Checkout
+      - name: Checkout source repo
         uses: actions/checkout@v2
+        with:
+          path: source
+
+      - name: Checkout destination repo
+        uses: actions/checkout@v2
+        with:
+          repository: yamatoya/yamatoya.github.io
+          token: ${{ secrets.DEPLOY_TOKEN }}
+          path: dest
 
       - name: Setup Node.js
         uses: actions/setup-node@v2
         with:
-          node-version: '16'  # Node.jsのバージョンを16に更新
+          node-version: '16'
 
-      - name: Clean install dependencies
+      - name: Install dependencies
         run: |
-          rm -rf node_modules
-          npm cache clean --force
+          cd source
           npm ci
 
       - name: Build
-        run: npm run build
+        run: |
+          cd source
+          npm run build
 
-      - name: Deploy
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.DEPLOY_TOKEN }}
-          publish_dir: ./dist
+      - name: Copy build files
+        run: |
+          rm -rf dest/*
+          cp -r source/dist/* dest/
+
+      - name: Commit and push
+        run: |
+          cd dest
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add .
+          git commit -m "Deploy from sb1-bnykmy"
+          git push
