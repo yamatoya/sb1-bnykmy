@@ -20,3 +20,10 @@ app.mount('#app')
 
 // グローバルにルーターを公開
 window.$router = router
+
+// 404.htmlからのリダイレクトを処理
+const redirect = sessionStorage.getItem('redirect');
+if (redirect) {
+  sessionStorage.removeItem('redirect');
+  router.push(redirect);
+}
