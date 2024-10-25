@@ -8,7 +8,6 @@
       <div v-for="tweet in document.tweets" :key="tweet.id" class="tweet" @click="goToTweet(tweet.id)">
         <div class="tweet-header">
           <span class="index">{{ tweet.index }}</span>
-          <span class="document-title">{{ document.displayName }}</span>
         </div>
         <p class="tweet-content" v-html="highlightContent(tweet)"></p>
       </div>
