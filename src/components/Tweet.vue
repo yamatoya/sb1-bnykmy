@@ -9,11 +9,15 @@
         <div class="qa-content">
           <div class="question">
             <h3>質問</h3>
-            <p v-html="qaItem.question"></p>
+            <p v-html="highlightedQuestion"></p>
           </div>
           <div class="answer">
             <h3>回答</h3>
             <p v-html="qaItem.answer"></p>
+          </div>
+          <div v-if="qaItem.links" class="tweet-links">
+            <h3>関連リンク:</h3>
+            <tweet-links :links="qaItem.links" :base-url="$route.params.documentId"></tweet-links>
           </div>
         </div>
       </div>
@@ -38,11 +42,15 @@
             <div class="qa-content">
               <div class="question">
                 <h4>質問</h4>
-                <p v-html="link.question"></p>
+                <p v-html="highlightQuestionText(link.question)"></p>
               </div>
               <div class="answer">
                 <h4>回答</h4>
                 <p v-html="link.answer"></p>
+              </div>
+              <div v-if="link.links" class="tweet-links nested">
+                <h4>関連リンク:</h4>
+                <tweet-links :links="link.links" :base-url="getBaseUrl(link)"></tweet-links>
               </div>
             </div>
           </div>
@@ -81,18 +89,28 @@ export default {
     },
     highlightedContent() {
       if (!this.tweet) return ''
-      let content = this.tweet.content
-      if (this.tweet.links && this.tweet.links.length > 0) {
-        this.tweet.links.forEach(link => {
-          const escapedLinkText = link.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-          const regex = new RegExp(`(${escapedLinkText})`, 'gi')
-          content = content.replace(regex, '<span class="highlight">$1</span>')
-        })
-      }
-      return content
+      return this.highlightText(this.tweet.content, this.tweet.links)
+    },
+    highlightedQuestion() {
+      if (!this.qaItem) return ''
+      return this.highlightText(this.qaItem.question, this.qaItem.links)
     }
   },
   methods: {
+    highlightText(text, links) {
+      if (!links || !text) return text
+      let result = text
+      links.forEach(link => {
+        const escapedLinkText = link.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+        const regex = new RegExp(`(${escapedLinkText})`, 'gi')
+        result = result.replace(regex, '<span class="highlight">$1</span>')
+      })
+      return result
+    },
+    highlightQuestionText(question) {
+      if (!this.tweet || !this.tweet.links) return question
+      return this.highlightText(question, this.tweet.links)
+    },
     loadData() {
       this.document = documentsData[this.$route.params.documentId]
       if (this.document.public_comment) {
@@ -104,7 +122,13 @@ export default {
             const [docId, qaId] = link.url.split('/')
             const linkedDoc = documentsData[docId]
             if (linkedDoc && linkedDoc.public_comment) {
-              return linkedDoc.questions.find(q => q.id === qaId)
+              const question = linkedDoc.questions.find(q => q.id === qaId)
+              if (question) {
+                return {
+                  ...question,
+                  documentId: docId
+                }
+              }
             }
             return null
           }).filter(link => link !== null)
@@ -112,6 +136,9 @@ export default {
           this.publicCommentLinks = null
         }
       }
+    },
+    getBaseUrl(link) {
+      return link.documentId || this.$route.params.documentId
     },
     copyUrl() {
       const url = window.location.href
@@ -178,5 +205,21 @@ h1, .document-title {
 
 .public-comment-item:last-child {
   margin-bottom: 0;
+}
+
+.tweet-links.nested {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #e1e8ed;
+}
+
+.tweet-links.nested h4 {
+  color: #1da1f2;
+  margin-bottom: 10px;
+}
+
+:deep(.highlight) {
+  color: #0f83fd;
+  font-weight: bold;
 }
 </style>

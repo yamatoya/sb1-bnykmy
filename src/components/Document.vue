@@ -26,6 +26,9 @@
             <h3>回答</h3>
             <p v-html="question.answer"></p>
           </div>
+          <div v-if="question.links" class="links-count">
+            関連リンク({{ question.links.length }})
+          </div>
         </div>
       </div>
     </div>
@@ -168,5 +171,11 @@ h1 {
   font-size: 0.8em;
   color: #657786;
   margin-top: 8px;
+}
+
+.links-count {
+  font-size: 0.8em;
+  color: #657786;
+  margin-top: 10px;
 }
 </style>
