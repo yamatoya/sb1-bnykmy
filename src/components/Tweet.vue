@@ -1,23 +1,37 @@
 <template>
-  <div v-if="document && tweet" class="tweet-container">
+  <div v-if="document" class="tweet-container">
     <div class="tweet-profile-header">
       <a @click="goBack" class="tweet-back-link">←</a>
       <h1>{{ document.displayName }}</h1>
     </div>
     <div class="tweet">
-      <div class="tweet-header">
-        <span class="index">{{ tweet.index }}</span>
-        <span class="document-title">{{ document.displayName }}</span>
+      <div v-if="document.public_comment && qaItem">
+        <div class="qa-content">
+          <div class="question">
+            <h3>質問</h3>
+            <p v-html="qaItem.question"></p>
+          </div>
+          <div class="answer">
+            <h3>回答</h3>
+            <p v-html="qaItem.answer"></p>
+          </div>
+        </div>
       </div>
-      <p class="tweet-content" v-html="highlightedContent"></p>
-      <div class="tweet-actions">
-        <button class="copy-url-btn" @click="copyUrl">
-          <i class="fas fa-link"></i> URLをコピー
-        </button>
-      </div>
-      <div v-if="tweet.links && tweet.links.length > 0" class="tweet-links">
-        <h3>関連リンク:</h3>
-        <tweet-links :links="tweet.links" :base-url="$route.params.documentId"></tweet-links>
+      <div v-else-if="tweet">
+        <div class="tweet-header">
+          <span class="index">{{ tweet.index }}</span>
+          <span class="document-title">{{ document.displayName }}</span>
+        </div>
+        <p class="tweet-content" v-html="highlightedContent"></p>
+        <div class="tweet-actions">
+          <button class="copy-url-btn" @click="copyUrl">
+            <i class="fas fa-link"></i> URLをコピー
+          </button>
+        </div>
+        <div v-if="tweet.links && tweet.links.length > 0" class="tweet-links">
+          <h3>関連リンク:</h3>
+          <tweet-links :links="tweet.links" :base-url="$route.params.documentId"></tweet-links>
+        </div>
       </div>
     </div>
   </div>
@@ -35,19 +49,24 @@ export default {
   data() {
     return {
       document: null,
-      tweet: null
+      tweet: null,
+      qaItem: null
     }
   },
   created() {
-    this.loadTweetData()
+    this.loadData()
   },
   watch: {
-    '$route': 'loadTweetData'
+    '$route': 'loadData'
   },
   methods: {
-    loadTweetData() {
+    loadData() {
       this.document = documentsData[this.$route.params.documentId]
-      this.tweet = this.document.tweets.find(t => t.id === this.$route.params.tweetId)
+      if (this.document.public_comment) {
+        this.qaItem = this.document.questions.find(q => q.id === this.$route.params.tweetId)
+      } else {
+        this.tweet = this.document.tweets.find(t => t.id === this.$route.params.tweetId)
+      }
     },
     copyUrl() {
       const url = window.location.href
@@ -67,6 +86,7 @@ export default {
   },
   computed: {
     highlightedContent() {
+      if (!this.tweet) return ''
       let content = this.tweet.content
       if (this.tweet.links && this.tweet.links.length > 0) {
         this.tweet.links.forEach(link => {
@@ -80,3 +100,24 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+.qa-content {
+  padding: 20px;
+}
+
+.question, .answer {
+  margin-bottom: 20px;
+}
+
+.question h3, .answer h3 {
+  font-size: 1.1em;
+  color: #657786;
+  margin-bottom: 10px;
+}
+
+.question p, .answer p {
+  margin: 0;
+  line-height: 1.6;
+}
+</style>
