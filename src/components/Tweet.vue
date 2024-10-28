@@ -32,6 +32,21 @@
           <h3>関連リンク:</h3>
           <tweet-links :links="tweet.links" :base-url="$route.params.documentId"></tweet-links>
         </div>
+        <div v-if="publicCommentLinks && publicCommentLinks.length > 0" class="public-comment-links">
+          <h3>パブリックコメント: {{ tweet.public_comment_links[0].text }}</h3>
+          <div v-for="link in publicCommentLinks" :key="link.id" class="public-comment-item">
+            <div class="qa-content">
+              <div class="question">
+                <h4>質問</h4>
+                <p v-html="link.question"></p>
+              </div>
+              <div class="answer">
+                <h4>回答</h4>
+                <p v-html="link.answer"></p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -50,7 +65,8 @@ export default {
     return {
       document: null,
       tweet: null,
-      qaItem: null
+      qaItem: null,
+      publicCommentLinks: null
     }
   },
   created() {
@@ -83,6 +99,18 @@ export default {
         this.qaItem = this.document.questions.find(q => q.id === this.$route.params.tweetId)
       } else {
         this.tweet = this.document.tweets.find(t => t.id === this.$route.params.tweetId)
+        if (this.tweet && this.tweet.public_comment_links) {
+          this.publicCommentLinks = this.tweet.public_comment_links.map(link => {
+            const [docId, qaId] = link.url.split('/')
+            const linkedDoc = documentsData[docId]
+            if (linkedDoc && linkedDoc.public_comment) {
+              return linkedDoc.questions.find(q => q.id === qaId)
+            }
+            return null
+          }).filter(link => link !== null)
+        } else {
+          this.publicCommentLinks = null
+        }
       }
     },
     copyUrl() {
@@ -113,7 +141,8 @@ export default {
   margin-bottom: 20px;
 }
 
-.question h3, .answer h3 {
+.question h3, .answer h3,
+.question h4, .answer h4 {
   font-size: 1.1em;
   color: #657786;
   margin-bottom: 10px;
@@ -126,5 +155,28 @@ export default {
 
 h1, .document-title {
   white-space: pre-line;
+}
+
+.public-comment-links {
+  margin-top: 30px;
+  border-top: 1px solid #e1e8ed;
+  padding-top: 20px;
+}
+
+.public-comment-links h3 {
+  color: #1da1f2;
+  margin-bottom: 15px;
+}
+
+.public-comment-item {
+  background-color: #f8f9fa;
+  border: 1px solid #e1e8ed;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  overflow: hidden;
+}
+
+.public-comment-item:last-child {
+  margin-bottom: 0;
 }
 </style>

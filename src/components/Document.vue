@@ -38,6 +38,9 @@
           <span class="index">{{ tweet.index }}</span>
         </div>
         <p class="tweet-content" v-html="highlightContent(tweet)"></p>
+        <div v-if="tweet.public_comment_links" class="public-comment-count">
+          パブリックコメント({{ tweet.public_comment_links.length }})
+        </div>
       </div>
     </div>
   </div>
@@ -62,11 +65,11 @@ export default {
     }
   },
   methods: {
-    goToTweet(tweetId) {
-      this.$router.push(`/document/${this.$route.params.id}/${tweetId}`)
-    },
     goToQA(qaId) {
       this.$router.push(`/document/${this.$route.params.id}/${qaId}`)
+    },
+    goToTweet(tweetId) {
+      this.$router.push(`/document/${this.$route.params.id}/${tweetId}`)
     },
     highlightContent(tweet) {
       let content = tweet.content
@@ -159,5 +162,11 @@ export default {
 
 h1 {
   white-space: pre-line;
+}
+
+.public-comment-count {
+  font-size: 0.8em;
+  color: #657786;
+  margin-top: 8px;
 }
 </style>
