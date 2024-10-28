@@ -2,9 +2,11 @@
   <div v-if="document">
     <div class="profile-header">
       <router-link to="/" class="back-link">←</router-link>
-      <h1>{{ document.displayName }}</h1>
+      <h1 v-html="formattedDisplayName"></h1>
       <div v-if="document.url" class="document-url">
-        <a :href="document.url" target="_blank" rel="noopener noreferrer">原文を表示</a>
+        <a :href="document.url" target="_blank" rel="noopener noreferrer">
+          <i class="fas fa-external-link-alt"></i> 原文を表示
+        </a>
       </div>
     </div>
     
@@ -54,6 +56,11 @@ export default {
   created() {
     this.document = documentsData[this.$route.params.id]
   },
+  computed: {
+    formattedDisplayName() {
+      return this.document.displayName.replace(/<br>/gi, '\n')
+    }
+  },
   methods: {
     goToTweet(tweetId) {
       this.$router.push(`/document/${this.$route.params.id}/${tweetId}`)
@@ -78,12 +85,31 @@ export default {
 
 <style scoped>
 .document-url {
-  margin-top: 10px;
+  margin-top: 15px;
+  text-align: right;
 }
 
 .document-url a {
-  color: #ffffff;
-  text-decoration: underline;
+  display: inline-block;
+  padding: 8px 16px;
+  background-color: #ffffff;
+  color: #1a1a1a;
+  text-decoration: none;
+  border-radius: 20px;
+  font-weight: 500;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.document-url a:hover {
+  background-color: #f0f0f0;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.document-url i {
+  margin-right: 6px;
+  color: #1da1f2;
 }
 
 .qa-container {
@@ -129,5 +155,9 @@ export default {
 .question p, .answer p {
   margin: 0;
   line-height: 1.5;
+}
+
+h1 {
+  white-space: pre-line;
 }
 </style>

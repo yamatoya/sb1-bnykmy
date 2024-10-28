@@ -6,7 +6,7 @@
         <div class="document-item">
           <div class="document-icon">{{ doc.displayName.charAt(0) }}</div>
           <div class="document-info">
-            <div class="document-name">{{ doc.displayName }}</div>
+            <div class="document-name">{{ formatDisplayName(doc.displayName) }}</div>
           </div>
         </div>
       </router-link>
@@ -22,6 +22,11 @@ export default {
   data() {
     return {
       documents: documentsData
+    }
+  },
+  methods: {
+    formatDisplayName(name) {
+      return name.replace(/<br>/gi, '');
     }
   }
 }

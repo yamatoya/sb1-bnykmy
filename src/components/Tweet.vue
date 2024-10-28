@@ -2,7 +2,7 @@
   <div v-if="document" class="tweet-container">
     <div class="tweet-profile-header">
       <a @click="goBack" class="tweet-back-link">←</a>
-      <h1>{{ document.displayName }}</h1>
+      <h1 v-html="formattedDisplayName"></h1>
     </div>
     <div class="tweet">
       <div v-if="document.public_comment && qaItem">
@@ -20,7 +20,7 @@
       <div v-else-if="tweet">
         <div class="tweet-header">
           <span class="index">{{ tweet.index }}</span>
-          <span class="document-title">{{ document.displayName }}</span>
+          <span class="document-title" v-html="formattedDisplayName"></span>
         </div>
         <p class="tweet-content" v-html="highlightedContent"></p>
         <div class="tweet-actions">
@@ -59,6 +59,23 @@ export default {
   watch: {
     '$route': 'loadData'
   },
+  computed: {
+    formattedDisplayName() {
+      return this.document.displayName.replace(/<br>/gi, '\n')
+    },
+    highlightedContent() {
+      if (!this.tweet) return ''
+      let content = this.tweet.content
+      if (this.tweet.links && this.tweet.links.length > 0) {
+        this.tweet.links.forEach(link => {
+          const escapedLinkText = link.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+          const regex = new RegExp(`(${escapedLinkText})`, 'gi')
+          content = content.replace(regex, '<span class="highlight">$1</span>')
+        })
+      }
+      return content
+    }
+  },
   methods: {
     loadData() {
       this.document = documentsData[this.$route.params.documentId]
@@ -83,20 +100,6 @@ export default {
         this.$router.push(`/document/${this.$route.params.documentId}`)
       }
     }
-  },
-  computed: {
-    highlightedContent() {
-      if (!this.tweet) return ''
-      let content = this.tweet.content
-      if (this.tweet.links && this.tweet.links.length > 0) {
-        this.tweet.links.forEach(link => {
-          const escapedLinkText = link.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-          const regex = new RegExp(`(${escapedLinkText})`, 'gi')
-          content = content.replace(regex, '<span class="highlight">$1</span>')
-        })
-      }
-      return content
-    }
   }
 }
 </script>
@@ -119,5 +122,9 @@ export default {
 .question p, .answer p {
   margin: 0;
   line-height: 1.6;
+}
+
+h1, .document-title {
+  white-space: pre-line;
 }
 </style>
