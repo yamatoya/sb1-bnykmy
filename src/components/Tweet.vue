@@ -37,8 +37,11 @@
           <tweet-links :links="tweet.links" :base-url="$route.params.documentId"></tweet-links>
         </div>
         <div v-if="publicCommentLinks && publicCommentLinks.length > 0" class="public-comment-links">
-          <h3>パブリックコメント: {{ tweet.public_comment_links[0].text }}</h3>
-          <div v-for="link in publicCommentLinks" :key="link.id" class="public-comment-item">
+          <h3>パブリックコメント:</h3>
+          <div v-for="(link, index) in publicCommentLinks" :key="index" class="public-comment-item">
+            <div class="public-comment-header">
+              <h4>{{ link.text }}</h4>
+            </div>
             <div class="qa-content">
               <div class="question">
                 <h4>質問</h4>
@@ -47,10 +50,6 @@
               <div class="answer">
                 <h4>回答</h4>
                 <p v-html="link.answer"></p>
-              </div>
-              <div v-if="link.links" class="tweet-links nested">
-                <h4>関連リンク:</h4>
-                <tweet-links :links="link.links" :base-url="getBaseUrl(link)"></tweet-links>
               </div>
             </div>
           </div>
@@ -126,6 +125,7 @@ export default {
               if (question) {
                 return {
                   ...question,
+                  text: link.text,
                   documentId: docId
                 }
               }
@@ -136,9 +136,6 @@ export default {
           this.publicCommentLinks = null
         }
       }
-    },
-    getBaseUrl(link) {
-      return link.documentId || this.$route.params.documentId
     },
     copyUrl() {
       const url = window.location.href
@@ -162,6 +159,8 @@ export default {
 <style scoped>
 .qa-content {
   padding: 20px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
 }
 
 .question, .answer {
@@ -196,30 +195,55 @@ h1, .document-title {
 }
 
 .public-comment-item {
-  background-color: #f8f9fa;
+  background-color: #ffffff;
   border: 1px solid #e1e8ed;
   border-radius: 8px;
   margin-bottom: 15px;
   overflow: hidden;
 }
 
+.public-comment-header {
+  background-color: #f8f9fa;
+  padding: 10px 20px;
+  border-bottom: 1px solid #e1e8ed;
+}
+
+.public-comment-header h4 {
+  margin: 0;
+  color: #1da1f2;
+}
+
 .public-comment-item:last-child {
   margin-bottom: 0;
-}
-
-.tweet-links.nested {
-  margin-top: 15px;
-  padding-top: 15px;
-  border-top: 1px solid #e1e8ed;
-}
-
-.tweet-links.nested h4 {
-  color: #1da1f2;
-  margin-bottom: 10px;
 }
 
 :deep(.highlight) {
   color: #0f83fd;
   font-weight: bold;
+}
+
+.tweet-actions {
+  margin: 15px 0;
+}
+
+.copy-url-btn {
+  background-color: #1da1f2;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  transition: background-color 0.2s ease;
+}
+
+.copy-url-btn:hover {
+  background-color: #1991db;
+}
+
+.copy-url-btn i {
+  margin-right: 8px;
 }
 </style>
