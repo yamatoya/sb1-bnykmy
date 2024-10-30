@@ -125,13 +125,14 @@ export default {
   padding: 8px 12px;
   border: 1px solid #e1e8ed;
   border-radius: 20px;
-  font-size: 14px;
+  font-size: 16px; /* iOSでのズームを防ぐために16px以上に設定 */
   transition: all 0.3s ease;
-  max-width: calc(100% - 24px); /* パディングを考慮した最大幅 */
+  max-width: calc(100% - 24px);
+  -webkit-appearance: none; /* iOSのデフォルトスタイルを削除 */
+  appearance: none;
 }
 
 @media (hover: hover) {
-  /* タッチデバイス以外の場合のスタイル */
   .search-input:focus {
     width: 100%;
     outline: none;
@@ -141,9 +142,8 @@ export default {
 }
 
 @supports (-webkit-touch-callout: none) {
-  /* iOS向けのスタイル */
   .search-input:focus {
-    width: calc(100% - 24px); /* パディングを考慮した幅 */
+    width: calc(100% - 24px);
     outline: none;
     border-color: #1da1f2;
     box-shadow: 0 0 0 2px rgba(29, 161, 242, 0.1);
