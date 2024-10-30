@@ -56,11 +56,20 @@ export default {
   data() {
     return {
       document: null,
-      searchQuery: '',
       isSearchFocused: false
     }
   },
   computed: {
+    searchQuery: {
+      get() {
+        return this.$route.query.q || ''
+      },
+      set(value) {
+        this.$router.replace({
+          query: { ...this.$route.query, q: value || undefined }
+        })
+      }
+    },
     formattedDisplayName() {
       return this.document?.displayName.replace(/<br>/gi, '\n') || ''
     },
@@ -87,7 +96,10 @@ export default {
   },
   methods: {
     goToItem(itemId) {
-      this.$router.push(`/document/${this.$route.params.id}/${itemId}`)
+      this.$router.push({
+        path: `/document/${this.$route.params.id}/${itemId}`,
+        query: { back: this.$route.fullPath }
+      })
     },
     highlightContent(text) {
       if (!text) return ''
@@ -125,10 +137,10 @@ export default {
   padding: 8px 12px;
   border: 1px solid #e1e8ed;
   border-radius: 20px;
-  font-size: 16px; /* iOSでのズームを防ぐために16px以上に設定 */
+  font-size: 16px;
   transition: all 0.3s ease;
   max-width: calc(100% - 24px);
-  -webkit-appearance: none; /* iOSのデフォルトスタイルを削除 */
+  -webkit-appearance: none;
   appearance: none;
 }
 
