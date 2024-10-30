@@ -117,6 +117,7 @@ export default {
 .search-container {
   margin: 20px 0;
   padding: 0 20px;
+  max-width: 100%;
 }
 
 .search-input {
@@ -126,13 +127,27 @@ export default {
   border-radius: 20px;
   font-size: 14px;
   transition: all 0.3s ease;
+  max-width: calc(100% - 24px); /* パディングを考慮した最大幅 */
 }
 
-.search-input:focus {
-  width: 100%;
-  outline: none;
-  border-color: #1da1f2;
-  box-shadow: 0 0 0 2px rgba(29, 161, 242, 0.1);
+@media (hover: hover) {
+  /* タッチデバイス以外の場合のスタイル */
+  .search-input:focus {
+    width: 100%;
+    outline: none;
+    border-color: #1da1f2;
+    box-shadow: 0 0 0 2px rgba(29, 161, 242, 0.1);
+  }
+}
+
+@supports (-webkit-touch-callout: none) {
+  /* iOS向けのスタイル */
+  .search-input:focus {
+    width: calc(100% - 24px); /* パディングを考慮した幅 */
+    outline: none;
+    border-color: #1da1f2;
+    box-shadow: 0 0 0 2px rgba(29, 161, 242, 0.1);
+  }
 }
 
 .tweets {
