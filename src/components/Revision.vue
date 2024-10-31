@@ -6,7 +6,7 @@
     </div>
 
     <div class="revision-controls">
-      <select v-model="selectedRevision" class="revision-select">
+      <select v-model="selectedRevision" class="revision-select" @change="onRevisionChange">
         <option value="">全ての改訂を表示</option>
         <option v-for="rev in document.revisions" :key="rev.id" :value="rev.id">
           {{ rev.title }}
@@ -37,37 +37,57 @@
 </template>
 
 <script>
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import documentsData from '../documents.json'
 import { diffChars } from 'diff'
 
 export default {
   name: 'Revision',
-  data() {
-    return {
-      document: null,
-      selectedRevision: ''
+  setup() {
+    const route = useRoute()
+    const router = useRouter()
+    const document = ref(null)
+    const selectedRevision = ref('')
+
+    onMounted(() => {
+      document.value = documentsData[route.params.id]
+      // URL から revision パラメータを取得
+      selectedRevision.value = route.query.revision || ''
+    })
+
+    // URL パラメータが変更されたときに選択を更新
+    watch(() => route.query.revision, (newRevision) => {
+      selectedRevision.value = newRevision || ''
+    })
+
+    const onRevisionChange = () => {
+      // 選択が変更されたときに URL を更新
+      router.replace({
+        query: {
+          ...route.query,
+          revision: selectedRevision.value || undefined
+        }
+      })
     }
-  },
-  computed: {
-    filteredRevisions() {
-      if (!this.selectedRevision) {
-        return this.document.revisions
+
+    const filteredRevisions = computed(() => {
+      if (!document.value) return []
+      if (!selectedRevision.value) {
+        return document.value.revisions
       }
-      return this.document.revisions.filter(rev => rev.id === this.selectedRevision)
-    }
-  },
-  created() {
-    this.document = documentsData[this.$route.params.id]
-  },
-  methods: {
-    formatDate(dateString) {
+      return document.value.revisions.filter(rev => rev.id === selectedRevision.value)
+    })
+
+    const formatDate = (dateString) => {
       return new Date(dateString).toLocaleDateString('ja-JP', {
         year: 'numeric',
         month: '2-digit',
         day: '2-digit'
       })
-    },
-    highlightChanges(before, after) {
+    }
+
+    const highlightChanges = (before, after) => {
       if (!before) return after // 新設の場合は下線なしで表示
 
       // HTMLタグを一時的にプレースホルダーに置き換え
@@ -99,6 +119,15 @@ export default {
 
       // HTMLタグを復元
       return result.replace(/___TAG(\d+)___/g, (_, i) => tags[i])
+    }
+
+    return {
+      document,
+      selectedRevision,
+      filteredRevisions,
+      formatDate,
+      highlightChanges,
+      onRevisionChange
     }
   }
 }
