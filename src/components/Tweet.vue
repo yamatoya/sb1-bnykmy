@@ -157,6 +157,50 @@ export default {
 </script>
 
 <style scoped>
+.tweet-container {
+  max-width: 800px;
+  margin: 0 auto;
+  background-color: #ffffff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.tweet-profile-header {
+  background-color: #1da1f2;
+  color: #ffffff;
+  padding: 20px;
+  position: relative;
+  min-height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tweet-back-link {
+  position: absolute;
+  left: 20px;
+  font-size: 24px;
+  text-decoration: none;
+  color: #ffffff;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.tweet-profile-header h1 {
+  margin: 0;
+  padding: 0 40px;
+  text-align: center;
+  font-size: 1.5em;
+  max-width: 80%;
+  white-space: pre-line;
+  word-break: break-word;
+}
+
+.tweet {
+  padding: 20px;
+}
+
 .qa-content {
   padding: 20px;
   background-color: #f8f9fa;
@@ -179,7 +223,9 @@ export default {
   line-height: 1.6;
 }
 
-h1, .document-title {
+.tweet-content {
+  font-size: 16px;
+  line-height: 1.6;
   white-space: pre-line;
 }
 
@@ -245,5 +291,25 @@ h1, .document-title {
 
 .copy-url-btn i {
   margin-right: 8px;
+}
+
+@media (max-width: 768px) {
+  .tweet-profile-header {
+    padding: 40px 20px;
+  }
+
+  .tweet-profile-header h1 {
+    font-size: 1.2em;
+    max-width: 100%;
+    padding: 0 30px;
+  }
+
+  .tweet {
+    padding: 15px;
+  }
+
+  .qa-content {
+    padding: 15px;
+  }
 }
 </style>
