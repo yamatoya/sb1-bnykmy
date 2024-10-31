@@ -20,6 +20,7 @@
         </a>
       </div>
     </div>
+
     <div class="search-container">
       <input
         type="text"
@@ -30,6 +31,7 @@
         @blur="isSearchFocused = false"
       />
     </div>
+
     <div class="tweets">
       <div v-for="item in filteredItems" :key="item.id" class="tweet" @click="goToItem(item.id)">
         <div class="tweet-header">
@@ -67,6 +69,7 @@
 <script>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import documentsData from '../documents.json'
 
 export default {
   name: 'Document',
@@ -76,18 +79,8 @@ export default {
     const document = ref(null)
     const isSearchFocused = ref(false)
 
-    const loadDocument = async () => {
-      try {
-        const response = await fetch('/src/documents.json')
-        const data = await response.json()
-        document.value = data[route.params.id]
-      } catch (error) {
-        console.error('Error loading document:', error)
-      }
-    }
-
     onMounted(() => {
-      loadDocument()
+      document.value = documentsData[route.params.id]
     })
 
     const searchQuery = computed({
@@ -160,7 +153,6 @@ export default {
 
 .back-link {
   position: absolute;
-  top: 20px;
   left: 20px;
   font-size: 24px;
   text-decoration: none;
