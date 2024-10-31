@@ -105,6 +105,35 @@ export default {
 </script>
 
 <style>
+.profile-header {
+  background-color: #f0f0f0;
+  padding: 20px;
+  margin-bottom: 20px;
+  position: relative;
+  min-height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.back-link {
+  position: absolute;
+  left: 20px;
+  font-size: 24px;
+  text-decoration: none;
+  color: #1da1f2;
+  z-index: 1;
+}
+
+h1 {
+  margin: 0;
+  padding: 0 40px;
+  text-align: center;
+  font-size: 1.5em;
+  max-width: 80%;
+  word-break: break-word;
+}
+
 .revision-controls {
   margin: 20px;
   text-align: center;
@@ -192,7 +221,6 @@ export default {
   padding: 10px 0;
 }
 
-/* グローバルスコープで適用されるように scoped 属性を削除 */
 .diff-added {
   background-color: #e6ffed;
   text-decoration: underline;
@@ -201,6 +229,16 @@ export default {
 }
 
 @media (max-width: 768px) {
+  .profile-header {
+    padding: 40px 20px;
+  }
+
+  h1 {
+    font-size: 1.2em;
+    max-width: 100%;
+    padding: 0 30px;
+  }
+
   .comparison-container {
     grid-template-columns: 1fr;
     gap: 10px;
@@ -212,6 +250,11 @@ export default {
 
   .article-container {
     padding: 15px;
+  }
+
+  .revision-select {
+    width: 100%;
+    max-width: 300px;
   }
 }
 </style>
