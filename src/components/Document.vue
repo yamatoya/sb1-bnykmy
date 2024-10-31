@@ -3,6 +3,22 @@
     <div class="profile-header">
       <router-link to="/" class="back-link">←</router-link>
       <h1 v-html="formattedDisplayName"></h1>
+      <div class="document-actions">
+        <router-link 
+          v-if="document.revisions"
+          :to="`/document/${$route.params.id}/revisions`" 
+          class="revision-link"
+        >
+          改訂履歴を表示
+        </router-link>
+        <a v-if="document.public_comment && document.url" 
+           :href="document.url" 
+           target="_blank" 
+           rel="noopener noreferrer" 
+           class="original-doc-btn">
+          原文を表示
+        </a>
+      </div>
     </div>
     <div class="search-container">
       <input
@@ -126,6 +142,31 @@ export default {
   color: #1da1f2;
 }
 
+.document-actions {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  gap: 10px;
+}
+
+.revision-link,
+.original-doc-btn {
+  background-color: #1da1f2;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: bold;
+  transition: background-color 0.2s ease;
+}
+
+.revision-link:hover,
+.original-doc-btn:hover {
+  background-color: #1991db;
+}
+
 .search-container {
   margin: 20px 0;
   padding: 0 20px;
@@ -133,33 +174,19 @@ export default {
 }
 
 .search-input {
-  width: 200px;
+  width: 100%;
+  max-width: 400px;
   padding: 8px 12px;
   border: 1px solid #e1e8ed;
   border-radius: 20px;
   font-size: 16px;
   transition: all 0.3s ease;
-  max-width: calc(100% - 24px);
-  -webkit-appearance: none;
-  appearance: none;
 }
 
-@media (hover: hover) {
-  .search-input:focus {
-    width: 100%;
-    outline: none;
-    border-color: #1da1f2;
-    box-shadow: 0 0 0 2px rgba(29, 161, 242, 0.1);
-  }
-}
-
-@supports (-webkit-touch-callout: none) {
-  .search-input:focus {
-    width: calc(100% - 24px);
-    outline: none;
-    border-color: #1da1f2;
-    box-shadow: 0 0 0 2px rgba(29, 161, 242, 0.1);
-  }
+.search-input:focus {
+  outline: none;
+  border-color: #1da1f2;
+  box-shadow: 0 0 0 2px rgba(29, 161, 242, 0.1);
 }
 
 .tweets {
@@ -250,5 +277,18 @@ h1 {
   text-align: center;
   margin: 0;
   padding-left: 30px;
+  padding-right: 60px;
+}
+
+@media (max-width: 480px) {
+  .document-actions {
+    position: static;
+    margin-top: 20px;
+    justify-content: center;
+  }
+  
+  h1 {
+    padding-bottom: 0;
+  }
 }
 </style>

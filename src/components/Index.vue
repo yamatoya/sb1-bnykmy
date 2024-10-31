@@ -12,21 +12,13 @@
       />
     </div>
     <div class="document-list">
-      <router-link v-for="(doc, id) in filteredDocuments" :key="id" :to="'/document/' + id">
+      <router-link v-for="(doc, id) in filteredDocuments" :key="id" :to="`/document/${id}`">
         <div class="document-item">
           <div class="document-icon">{{ doc.displayName.charAt(0) }}</div>
           <div class="document-info">
             <div class="document-name">{{ formatDisplayName(doc.displayName) }}</div>
-            <div v-if="searchQuery && getMatchingContent(doc).length > 0" class="search-matches">
-              <div v-for="(match, index) in getMatchingContent(doc)" :key="index" class="match-item">
-                <router-link 
-                  :to="`/document/${id}/${match.id}`"
-                  class="match-link"
-                  @click.native.stop
-                >
-                  <div class="match-content" v-html="highlightSearchTerms(match.content)"></div>
-                </router-link>
-              </div>
+            <div v-if="doc.revisions" class="revision-badge">
+              改訂あり ({{ doc.revisions.length }}件)
             </div>
           </div>
         </div>
@@ -57,16 +49,21 @@ export default {
         })
       }
     },
-    searchTerms() {
-      return this.searchQuery.toLowerCase().split(' ').filter(term => term.length > 0)
-    },
     filteredDocuments() {
       if (!this.searchQuery) return this.documents
 
+      const searchTerms = this.searchQuery.toLowerCase().split(' ').filter(term => term.length > 0)
       return Object.fromEntries(
         Object.entries(this.documents).filter(([_, doc]) => {
-          const contents = this.getSearchableContent(doc)
-          return this.searchTerms.every(term => contents.toLowerCase().includes(term))
+          const searchableContent = [
+            doc.displayName,
+            ...(doc.tweets?.map(t => t.content) || []),
+            ...(doc.revisions?.flatMap(r => 
+              r.articles.map(a => [a.before, a.after].filter(Boolean).join(' '))
+            ) || [])
+          ].join(' ').toLowerCase()
+          
+          return searchTerms.every(term => searchableContent.includes(term))
         })
       )
     }
@@ -74,138 +71,17 @@ export default {
   methods: {
     formatDisplayName(name) {
       return name.replace(/<br>/gi, '')
-    },
-    getSearchableContent(doc) {
-      if (doc.public_comment) {
-        return doc.questions.map(q => 
-          `${q.question} ${q.answer}`
-        ).join(' ')
-      } else {
-        return doc.tweets.map(t => t.content).join(' ')
-      }
-    },
-    getMatchingContent(doc) {
-      if (!this.searchQuery) return []
-
-      const matches = []
-      const maxLength = 100
-
-      if (doc.public_comment) {
-        doc.questions.forEach(q => {
-          if (this.containsAllSearchTerms(q.question)) {
-            matches.push({
-              content: this.truncateText(q.question, maxLength),
-              id: q.id
-            })
-          }
-          if (this.containsAllSearchTerms(q.answer)) {
-            matches.push({
-              content: this.truncateText(q.answer, maxLength),
-              id: q.id
-            })
-          }
-        })
-      } else {
-        doc.tweets.forEach(tweet => {
-          if (this.containsAllSearchTerms(tweet.content)) {
-            matches.push({
-              content: this.truncateText(tweet.content, maxLength),
-              id: tweet.id
-            })
-          }
-        })
-      }
-
-      return matches.slice(0, 3)
-    },
-    containsAllSearchTerms(text) {
-      const lowerText = text.toLowerCase()
-      return this.searchTerms.every(term => lowerText.includes(term))
-    },
-    truncateText(text, maxLength) {
-      if (text.length <= maxLength) return text
-
-      const searchTermPositions = []
-      this.searchTerms.forEach(term => {
-        let pos = text.toLowerCase().indexOf(term.toLowerCase())
-        while (pos !== -1) {
-          searchTermPositions.push({ start: pos, end: pos + term.length })
-          pos = text.toLowerCase().indexOf(term.toLowerCase(), pos + 1)
-        }
-      })
-
-      if (searchTermPositions.length === 0) {
-        return text.substring(0, maxLength) + '...'
-      }
-
-      const firstMatch = Math.min(...searchTermPositions.map(p => p.start))
-      const lastMatch = Math.max(...searchTermPositions.map(p => p.end))
-      
-      let start = Math.max(0, firstMatch - 20)
-      let end = Math.min(text.length, lastMatch + 20)
-      
-      if (end - start > maxLength) {
-        if (firstMatch - start > lastMatch - end) {
-          start = end - maxLength
-        } else {
-          end = start + maxLength
-        }
-      }
-
-      return (start > 0 ? '...' : '') +
-             text.substring(start, end) +
-             (end < text.length ? '...' : '')
-    },
-    highlightSearchTerms(text) {
-      let highlighted = text
-      this.searchTerms.forEach(term => {
-        const regex = new RegExp(`(${term})`, 'gi')
-        highlighted = highlighted.replace(regex, '<span class="highlight">$1</span>')
-      })
-      return highlighted
     }
   }
 }
 </script>
 
 <style scoped>
-.search-container {
-  margin: 20px 0;
-  padding: 0 20px;
-  max-width: 100%;
-}
-
-.search-input {
-  width: 200px;
-  padding: 8px 12px;
-  border: 1px solid #e1e8ed;
-  border-radius: 20px;
-  font-size: 16px;
-  transition: all 0.3s ease;
-  max-width: calc(100% - 24px);
-  -webkit-appearance: none;
-  appearance: none;
-}
-
-@media (hover: hover) {
-  .search-input:focus {
-    width: 100%;
-    outline: none;
-    border-color: #1da1f2;
-    box-shadow: 0 0 0 2px rgba(29, 161, 242, 0.1);
-  }
-}
-
-@supports (-webkit-touch-callout: none) {
-  .search-input:focus {
-    width: calc(100% - 24px);
-    outline: none;
-    border-color: #1da1f2;
-    box-shadow: 0 0 0 2px rgba(29, 161, 242, 0.1);
-  }
-}
-
 .document-list {
+  background-color: #ffffff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   margin-top: 20px;
 }
 
@@ -249,41 +125,35 @@ export default {
   word-wrap: break-word;
 }
 
-.search-matches {
-  margin-top: 8px;
+.revision-badge {
+  display: inline-block;
+  background-color: #17bf63;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  margin-top: 4px;
 }
 
-.match-item {
-  margin-top: 8px;
-  font-size: 14px;
-  color: #657786;
-  line-height: 1.4;
-  padding: 8px;
-  background-color: #f8f9fa;
-  border-radius: 4px;
+.search-container {
+  margin: 20px 0;
+  padding: 0 20px;
 }
 
-.match-link {
-  display: block;
-  text-decoration: none;
-  color: inherit;
+.search-input {
+  width: 100%;
+  max-width: 400px;
+  padding: 8px 12px;
+  border: 1px solid #e1e8ed;
+  border-radius: 20px;
+  font-size: 16px;
+  transition: all 0.3s ease;
 }
 
-.match-link:hover {
-  background-color: #edf0f2;
-  border-radius: 4px;
-}
-
-.match-content {
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-:deep(.highlight) {
-  background-color: #fff3cd;
-  color: #856404;
-  padding: 0 2px;
-  border-radius: 2px;
+.search-input:focus {
+  outline: none;
+  border-color: #1da1f2;
+  box-shadow: 0 0 0 2px rgba(29, 161, 242, 0.1);
 }
 
 h1 {
@@ -291,5 +161,9 @@ h1 {
   margin: 0;
   padding: 20px;
   color: #14171a;
+}
+
+a {
+  text-decoration: none;
 }
 </style>

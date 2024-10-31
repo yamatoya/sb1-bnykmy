@@ -1,0 +1,217 @@
+<template>
+  <div v-if="document">
+    <div class="profile-header">
+      <router-link :to="`/document/${$route.params.id}`" class="back-link">←</router-link>
+      <h1>{{ document.displayName }}</h1>
+    </div>
+
+    <div class="revision-controls">
+      <select v-model="selectedRevision" class="revision-select">
+        <option value="">全ての改訂を表示</option>
+        <option v-for="rev in document.revisions" :key="rev.id" :value="rev.id">
+          {{ rev.title }}
+        </option>
+      </select>
+    </div>
+
+    <div v-for="revision in filteredRevisions" :key="revision.id" class="revision-section">
+      <h2 class="revision-title">{{ revision.title }} ({{ formatDate(revision.date) }})</h2>
+      
+      <div v-for="article in revision.articles" :key="article.id" class="article-container">
+        <div class="article-status" :class="article.status">{{ article.status }}</div>
+        <div class="comparison-container">
+          <div class="comparison-column before">
+            <h3>改正前</h3>
+            <div v-if="article.before" class="content" v-html="article.before"></div>
+            <div v-else class="no-content">改正前の内容なし</div>
+          </div>
+          <div class="comparison-column after">
+            <h3>改正後</h3>
+            <div v-if="article.after" class="content" v-html="highlightChanges(article.before, article.after)"></div>
+            <div v-else class="no-content">改正後の内容なし</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+import documentsData from '../documents.json'
+import { diffChars } from 'diff'
+
+export default {
+  name: 'Revision',
+  data() {
+    return {
+      document: null,
+      selectedRevision: ''
+    }
+  },
+  computed: {
+    filteredRevisions() {
+      if (!this.selectedRevision) {
+        return this.document.revisions
+      }
+      return this.document.revisions.filter(rev => rev.id === this.selectedRevision)
+    }
+  },
+  created() {
+    this.document = documentsData[this.$route.params.id]
+  },
+  methods: {
+    formatDate(dateString) {
+      return new Date(dateString).toLocaleDateString('ja-JP', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      })
+    },
+    highlightChanges(before, after) {
+      if (!before) return after // 新設の場合は下線なしで表示
+
+      // HTMLタグを一時的にプレースホルダーに置き換え
+      const tags = []
+      const processedBefore = before.replace(/<[^>]+>/g, match => {
+        tags.push(match)
+        return `___TAG${tags.length - 1}___`
+      })
+      const processedAfter = after.replace(/<[^>]+>/g, match => {
+        const index = tags.indexOf(match)
+        if (index === -1) {
+          tags.push(match)
+        }
+        return `___TAG${tags.indexOf(match)}___`
+      })
+
+      // 差分を計算
+      const diff = diffChars(processedBefore, processedAfter)
+      
+      // 差分をマークアップ
+      let result = ''
+      diff.forEach(part => {
+        if (!part.added && !part.removed) {
+          result += part.value
+        } else if (part.added) {
+          result += `<span class="diff-added">${part.value}</span>`
+        }
+      })
+
+      // HTMLタグを復元
+      return result.replace(/___TAG(\d+)___/g, (_, i) => tags[i])
+    }
+  }
+}
+</script>
+
+<style>
+.revision-controls {
+  margin: 20px;
+  text-align: center;
+}
+
+.revision-select {
+  padding: 8px 16px;
+  font-size: 16px;
+  border: 1px solid #e1e8ed;
+  border-radius: 4px;
+  background-color: white;
+  min-width: 200px;
+}
+
+.revision-section {
+  margin: 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.revision-title {
+  padding: 15px 20px;
+  background-color: #f7f9fa;
+  border-bottom: 1px solid #e1e8ed;
+  margin: 0;
+  font-size: 1.2em;
+}
+
+.article-container {
+  padding: 20px;
+  border-bottom: 1px solid #e1e8ed;
+}
+
+.article-container:last-child {
+  border-bottom: none;
+}
+
+.article-status {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  margin-bottom: 10px;
+  font-size: 0.9em;
+  font-weight: bold;
+}
+
+.article-status.改正 {
+  background-color: #e6f3ff;
+  color: #0366d6;
+}
+
+.article-status.新設 {
+  background-color: #e6ffed;
+  color: #28a745;
+}
+
+.comparison-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.comparison-column {
+  background-color: #f8f9fa;
+  padding: 15px;
+  border-radius: 4px;
+}
+
+.comparison-column h3 {
+  margin: 0 0 10px 0;
+  font-size: 1em;
+  color: #586069;
+}
+
+.content {
+  white-space: pre-wrap;
+  line-height: 1.6;
+}
+
+.no-content {
+  color: #666;
+  font-style: italic;
+  padding: 10px 0;
+}
+
+/* グローバルスコープで適用されるように scoped 属性を削除 */
+.diff-added {
+  background-color: #e6ffed;
+  text-decoration: underline;
+  text-decoration-color: #28a745;
+  text-decoration-thickness: 2px;
+}
+
+@media (max-width: 768px) {
+  .comparison-container {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .revision-section {
+    margin: 10px;
+  }
+
+  .article-container {
+    padding: 15px;
+  }
+}
+</style>
