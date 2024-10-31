@@ -2,7 +2,7 @@
   <div v-if="document">
     <div class="profile-header">
       <router-link to="/" class="back-link">←</router-link>
-      <h1 v-html="formattedDisplayName"></h1>
+      <h1>{{ formatDisplayName(document.displayName) }}</h1>
       <div class="document-actions">
         <router-link 
           v-if="document.revisions"
@@ -65,61 +65,82 @@
 </template>
 
 <script>
-import documentsData from '../documents.json'
+import { ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 export default {
   name: 'Document',
-  data() {
-    return {
-      document: null,
-      isSearchFocused: false
+  setup() {
+    const route = useRoute()
+    const router = useRouter()
+    const document = ref(null)
+    const isSearchFocused = ref(false)
+
+    const loadDocument = async () => {
+      try {
+        const response = await fetch('/src/documents.json')
+        const data = await response.json()
+        document.value = data[route.params.id]
+      } catch (error) {
+        console.error('Error loading document:', error)
+      }
     }
-  },
-  computed: {
-    searchQuery: {
-      get() {
-        return this.$route.query.q || ''
-      },
-      set(value) {
-        this.$router.replace({
-          query: { ...this.$route.query, q: value || undefined }
+
+    onMounted(() => {
+      loadDocument()
+    })
+
+    const searchQuery = computed({
+      get: () => route.query.q || '',
+      set: (value) => {
+        router.replace({
+          query: { ...route.query, q: value || undefined }
         })
       }
-    },
-    formattedDisplayName() {
-      return this.document?.displayName.replace(/<br>/gi, '\n') || ''
-    },
-    filteredItems() {
-      if (!this.document) return []
-      
-      const items = this.document.public_comment ? this.document.questions : this.document.tweets
-      if (!this.searchQuery) return items
+    })
 
-      const searchTerms = this.searchQuery.toLowerCase().split(' ').filter(term => term.length > 0)
+    const filteredItems = computed(() => {
+      if (!document.value) return []
+      
+      const items = document.value.public_comment ? document.value.questions : document.value.tweets
+      if (!searchQuery.value) return items
+
+      const searchTerms = searchQuery.value.toLowerCase().split(' ').filter(term => term.length > 0)
       
       return items.filter(item => {
-        const content = this.document.public_comment
+        const content = document.value.public_comment
           ? `${item.question} ${item.answer}`
           : item.content
         const searchContent = content.toLowerCase()
         
         return searchTerms.every(term => searchContent.includes(term))
       })
+    })
+
+    const formatDisplayName = (name) => {
+      return name?.replace(/<br>/gi, '\n') || ''
     }
-  },
-  created() {
-    this.document = documentsData[this.$route.params.id]
-  },
-  methods: {
-    goToItem(itemId) {
-      this.$router.push({
-        path: `/document/${this.$route.params.id}/${itemId}`,
-        query: { back: this.$route.fullPath }
-      })
-    },
-    highlightContent(text) {
+
+    const highlightContent = (text) => {
       if (!text) return ''
       return text.replace(/<br>/gi, '\n')
+    }
+
+    const goToItem = (itemId) => {
+      router.push({
+        path: `/document/${route.params.id}/${itemId}`,
+        query: { back: route.fullPath }
+      })
+    }
+
+    return {
+      document,
+      isSearchFocused,
+      searchQuery,
+      filteredItems,
+      formatDisplayName,
+      highlightContent,
+      goToItem
     }
   }
 }
@@ -131,6 +152,10 @@ export default {
   padding: 20px;
   margin-bottom: 20px;
   position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
 }
 
 .back-link {
@@ -142,12 +167,19 @@ export default {
   color: #1da1f2;
 }
 
+h1 {
+  text-align: center;
+  margin: 0;
+  padding: 0 40px;
+  color: #14171a;
+  white-space: pre-line;
+}
+
 .document-actions {
-  position: absolute;
-  top: 20px;
-  right: 20px;
   display: flex;
   gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
 }
 
 .revision-link,
@@ -170,7 +202,6 @@ export default {
 .search-container {
   margin: 20px 0;
   padding: 0 20px;
-  max-width: 100%;
 }
 
 .search-input {
@@ -221,7 +252,8 @@ export default {
   border-radius: 8px;
 }
 
-.question, .answer {
+.question,
+.answer {
   margin-bottom: 20px;
   padding: 15px;
   background-color: #f8f9fa;
@@ -268,27 +300,24 @@ export default {
   color: #657786;
 }
 
-.link-count, .public-comment-count {
+.link-count,
+.public-comment-count {
   margin-right: 15px;
 }
 
-h1 {
-  white-space: pre-line;
-  text-align: center;
-  margin: 0;
-  padding-left: 30px;
-  padding-right: 60px;
-}
-
 @media (max-width: 480px) {
-  .document-actions {
-    position: static;
-    margin-top: 20px;
-    justify-content: center;
+  .profile-header {
+    padding-top: 60px;
   }
-  
-  h1 {
-    padding-bottom: 0;
+
+  .document-actions {
+    width: 100%;
+  }
+
+  .revision-link,
+  .original-doc-btn {
+    width: 100%;
+    text-align: center;
   }
 }
 </style>
