@@ -170,22 +170,26 @@
             "url": "payment_services_act/O66upnQIwpiBhBXx",
             "text": "第２条第15項"
           }
-        ]
+        ],
+        "revision": ["crypto_guidelines/revisions/20240906/240901"]
       },
       {
         "index": "I－１－２－２ 暗号資産交換業の該当性の判断基準 ②",
         "content": "イ．暗号資産の売買等を内容とする契約の締結の勧誘",
-        "id": "q7r9s1t3"
+        "id": "q7r9s1t3",
+        "revision": ["crypto_guidelines/revisions/20240906/240902"]
       },
       {
         "index": "I－１－２－２ 暗号資産交換業の該当性の判断基準 ②",
         "content": "ロ．暗号資産の売買等を内容とする契約の締結の勧誘を目的とした商品説明",
-        "id": "u5v7w9x1"
+        "id": "u5v7w9x1",
+        "revision": ["crypto_guidelines/revisions/20240906/240903"]
       },
       {
         "index": "I－１－２－２ 暗号資産交換業の該当性の判断基準 ②",
         "content": "ハ．暗号資産の売買等を内容とする契約の締結に向けた条件交渉",
-        "id": "y3z5a7b9"
+        "id": "y3z5a7b9",
+        "revision": ["crypto_guidelines/revisions/20240906/240904"]
       },
       {
         "index": "I－１－２－２ 暗号資産交換業の該当性の判断基準 ②",
@@ -195,7 +199,8 @@
       {
         "index": "I－１－２－２ 暗号資産交換業の該当性の判断基準 ②",
         "content": "（注２）<br>ただし、暗号資産の売買又は他の暗号資産との交換に関して以下の各行為の事務処理の一部のみを行うに過ぎない場合は、暗号資産の売買等の媒介に至らない行為といえる場合もある。",
-        "id": "g9h1j3k5"
+        "id": "g9h1j3k5",
+        "revision": ["crypto_guidelines/revisions/20240906/240905"]
       },
       {
         "index": "I－１－２－２ 暗号資産交換業の該当性の判断基準 ②（注２）",
@@ -210,7 +215,8 @@
             "url": "crypto_guidelines_public_20240906/JT0dNnfdI4wcyx1D",
             "text": "金融庁事務ガイドライン(暗号資産) 2024/09/06 パブリックコメント"
           }
-        ]
+        ],
+        "revision": ["crypto_guidelines/revisions/20240906/240906"]
       },
       {
         "index": "I－１－２－２ 暗号資産交換業の該当性の判断基準 ②（注２）",
@@ -221,7 +227,8 @@
             "url": "crypto_guidelines_public_20240906/lHWzwPvtmmxCIBCw",
             "text": "金融庁事務ガイドライン(暗号資産) 2024/09/06 パブリックコメント"
           }
-        ]
+        ],
+        "revision": ["crypto_guidelines/revisions/20240906/240907"]
       },
       {
         "index": "I－１－２－２ 暗号資産交換業の該当性の判断基準 ②（注２）",
@@ -231,17 +238,20 @@
       {
         "index": "I－１－２－２ 暗号資産交換業の該当性の判断基準 ②（注２）",
         "content": "・勧誘行為をせず、単に顧客を暗号資産交換業者に紹介する業務。なお、「紹介」には、以下の行為を含む（各行為の全部又は一部を組み合わせるものであったとしても「紹介」に含まれる場合がある）。",
-        "id": "z2a4b6c8"
+        "id": "z2a4b6c8",
+        "revision": ["crypto_guidelines/revisions/20240906/240908"]
       },
       {
         "index": "I－１－２－２ 暗号資産交換業の該当性の判断基準 ②（注２）",
         "content": "a．当該業者の店舗に、暗号資産交換業者が自らを紹介する宣伝媒体を据え置くこと又は掲示すること。",
-        "id": "d9e1f3g5"
+        "id": "d9e1f3g5",
+        "revision": ["crypto_guidelines/revisions/20240906/240909"]
       },
       {
         "index": "I－１－２－２ 暗号資産交換業の該当性の判断基準 ②（注２）",
         "content": "b．対面又は当該業者のウェブサイト上等において、当該業者と暗号資産交換業者の関係又は当該暗号資産交換業者の業務内容について説明を行うこと。",
-        "id": "h7j9k1m3"
+        "id": "h7j9k1m3",
+        "revision": ["crypto_guidelines/revisions/20240906/240910"]
       },
       {
         "index": "I－１－２－２ 暗号資産交換業の該当性の判断基準 ②（注２）",
@@ -264,7 +274,8 @@
             "url": "crypto_guidelines_public_20240906/nENuabqvTZBFvWdA",
             "text": "金融庁事務ガイドライン(暗号資産) 2024/09/06 パブリックコメント"
           }
-        ]
+        ],
+        "revision": ["crypto_guidelines/revisions/20240906/240911"]
       },
       {
         "index": "I－１－２－２ 暗号資産交換業の該当性の判断基準",

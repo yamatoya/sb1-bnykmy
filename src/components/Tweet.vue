@@ -40,7 +40,7 @@
           <h3>改訂履歴:</h3>
           <div v-for="revision in revisionHistory" :key="revision.id" class="revision-section">
             <h4 class="revision-title">{{ revision.title }} ({{ formatDate(revision.date) }})</h4>
-            <div v-for="article in revision.articles" :key="article.id" class="article-container">
+            <div v-for="article in filteredArticles(revision)" :key="article.id" class="article-container">
               <div class="article-status" :class="article.status">{{ article.status }}</div>
               <div class="comparison-container">
                 <div class="comparison-column before">
@@ -96,7 +96,8 @@ export default {
       tweet: null,
       qaItem: null,
       publicCommentLinks: null,
-      revisionHistory: null
+      revisionHistory: null,
+      revisionArticleIds: new Map() // 改訂履歴の記事IDを保存
     }
   },
   created() {
@@ -166,7 +167,13 @@ export default {
               const [docId, revisionFolder, revisionId] = revisionPath.split('/')
               const doc = documentsData[docId]
               if (doc && doc.revisions) {
-                return doc.revisions.find(rev => rev.id === revisionId)
+                const revision = doc.revisions.find(rev => rev.id === revisionId)
+                if (revision) {
+                  // 記事IDを保存（最後のセグメントを使用）
+                  const articleId = revisionPath.split('/').pop()
+                  this.revisionArticleIds.set(revision.id, articleId)
+                  return revision
+                }
               }
               return null
             }).filter(rev => rev !== null)
@@ -175,6 +182,11 @@ export default {
           }
         }
       }
+    },
+    filteredArticles(revision) {
+      const articleId = this.revisionArticleIds.get(revision.id)
+      if (!articleId) return revision.articles
+      return revision.articles.filter(article => article.id === articleId)
     },
     copyUrl() {
       const url = window.location.href
