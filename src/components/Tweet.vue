@@ -39,7 +39,15 @@
         <div v-if="revisionHistory && revisionHistory.length > 0" class="revision-history">
           <h3>改訂履歴:</h3>
           <div v-for="revision in revisionHistory" :key="revision.id" class="revision-section">
-            <h4 class="revision-title">{{ revision.title }} ({{ formatDate(revision.date) }})</h4>
+            <h4 class="revision-title">{{ revision.title }}</h4>
+            <div v-if="revision.description" class="revision-description">
+              <h5>参考情報:</h5>
+              <p>{{ revision.description }}</p>
+            </div>
+            <div v-if="revision.url" class="revision-url">
+              <h5>参考リンク:</h5>
+              <a :href="revision.url" target="_blank" rel="noopener noreferrer">{{ revision.url }}</a>
+            </div>
             <div v-for="article in filteredArticles(revision)" :key="article.id" class="article-container">
               <div class="article-status" :class="article.status">{{ article.status }}</div>
               <div class="comparison-container">
@@ -97,7 +105,7 @@ export default {
       qaItem: null,
       publicCommentLinks: null,
       revisionHistory: null,
-      revisionArticleIds: new Map() // 改訂履歴の記事IDを保存
+      revisionArticleIds: new Map()
     }
   },
   created() {
@@ -161,7 +169,6 @@ export default {
             this.publicCommentLinks = null
           }
 
-          // 改訂履歴の読み込み
           if (this.tweet.revision) {
             this.revisionHistory = this.tweet.revision.map(revisionPath => {
               const [docId, revisionFolder, revisionId] = revisionPath.split('/')
@@ -169,7 +176,6 @@ export default {
               if (doc && doc.revisions) {
                 const revision = doc.revisions.find(rev => rev.id === revisionId)
                 if (revision) {
-                  // 記事IDを保存（最後のセグメントを使用）
                   const articleId = revisionPath.split('/').pop()
                   this.revisionArticleIds.set(revision.id, articleId)
                   return revision
@@ -202,13 +208,6 @@ export default {
       } else {
         this.$router.push(`/document/${this.$route.params.documentId}`)
       }
-    },
-    formatDate(dateString) {
-      return new Date(dateString).toLocaleDateString('ja-JP', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit'
-      })
     },
     highlightChanges(before, after) {
       if (!before) return after
@@ -380,7 +379,6 @@ export default {
   margin-right: 8px;
 }
 
-/* 改訂履歴のスタイル */
 .revision-history {
   margin-top: 30px;
   border-top: 1px solid #e1e8ed;
@@ -407,6 +405,38 @@ export default {
   margin: 0;
   font-size: 1.1em;
   color: #14171a;
+}
+
+.revision-description,
+.revision-url {
+  padding: 12px 16px;
+  border-bottom: 1px solid #e1e8ed;
+  background-color: #f8f9fa;
+}
+
+.revision-description h5,
+.revision-url h5 {
+  color: #586069;
+  font-size: 0.9em;
+  margin-bottom: 8px;
+}
+
+.revision-description p {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #24292e;
+  margin: 0;
+}
+
+.revision-url a {
+  color: #0366d6;
+  text-decoration: none;
+  font-size: 14px;
+  word-break: break-all;
+}
+
+.revision-url a:hover {
+  text-decoration: underline;
 }
 
 .article-container {
