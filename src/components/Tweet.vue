@@ -36,6 +36,27 @@
           <h3>関連リンク:</h3>
           <tweet-links :links="tweet.links" :base-url="$route.params.documentId"></tweet-links>
         </div>
+        <div v-if="revisionHistory && revisionHistory.length > 0" class="revision-history">
+          <h3>改訂履歴:</h3>
+          <div v-for="revision in revisionHistory" :key="revision.id" class="revision-section">
+            <h4 class="revision-title">{{ revision.title }} ({{ formatDate(revision.date) }})</h4>
+            <div v-for="article in revision.articles" :key="article.id" class="article-container">
+              <div class="article-status" :class="article.status">{{ article.status }}</div>
+              <div class="comparison-container">
+                <div class="comparison-column before">
+                  <h5>改正前</h5>
+                  <div v-if="article.before" class="content" v-html="article.before"></div>
+                  <div v-else class="no-content">改正前の内容なし</div>
+                </div>
+                <div class="comparison-column after">
+                  <h5>改正後</h5>
+                  <div v-if="article.after" class="content" v-html="highlightChanges(article.before, article.after)"></div>
+                  <div v-else class="no-content">改正後の内容なし</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
         <div v-if="publicCommentLinks && publicCommentLinks.length > 0" class="public-comment-links">
           <h3>パブリックコメント:</h3>
           <div v-for="(link, index) in publicCommentLinks" :key="index" class="public-comment-item">
@@ -62,6 +83,7 @@
 <script>
 import documentsData from '../documents.json'
 import TweetLinks from './TweetLinks.vue'
+import { diffChars } from 'diff'
 
 export default {
   name: 'Tweet',
@@ -73,7 +95,8 @@ export default {
       document: null,
       tweet: null,
       qaItem: null,
-      publicCommentLinks: null
+      publicCommentLinks: null,
+      revisionHistory: null
     }
   },
   created() {
@@ -116,24 +139,40 @@ export default {
         this.qaItem = this.document.questions.find(q => q.id === this.$route.params.tweetId)
       } else {
         this.tweet = this.document.tweets.find(t => t.id === this.$route.params.tweetId)
-        if (this.tweet && this.tweet.public_comment_links) {
-          this.publicCommentLinks = this.tweet.public_comment_links.map(link => {
-            const [docId, qaId] = link.url.split('/')
-            const linkedDoc = documentsData[docId]
-            if (linkedDoc && linkedDoc.public_comment) {
-              const question = linkedDoc.questions.find(q => q.id === qaId)
-              if (question) {
-                return {
-                  ...question,
-                  text: link.text,
-                  documentId: docId
+        if (this.tweet) {
+          if (this.tweet.public_comment_links) {
+            this.publicCommentLinks = this.tweet.public_comment_links.map(link => {
+              const [docId, qaId] = link.url.split('/')
+              const linkedDoc = documentsData[docId]
+              if (linkedDoc && linkedDoc.public_comment) {
+                const question = linkedDoc.questions.find(q => q.id === qaId)
+                if (question) {
+                  return {
+                    ...question,
+                    text: link.text,
+                    documentId: docId
+                  }
                 }
               }
-            }
-            return null
-          }).filter(link => link !== null)
-        } else {
-          this.publicCommentLinks = null
+              return null
+            }).filter(link => link !== null)
+          } else {
+            this.publicCommentLinks = null
+          }
+
+          // 改訂履歴の読み込み
+          if (this.tweet.revision) {
+            this.revisionHistory = this.tweet.revision.map(revisionPath => {
+              const [docId, revisionFolder, revisionId] = revisionPath.split('/')
+              const doc = documentsData[docId]
+              if (doc && doc.revisions) {
+                return doc.revisions.find(rev => rev.id === revisionId)
+              }
+              return null
+            }).filter(rev => rev !== null)
+          } else {
+            this.revisionHistory = null
+          }
         }
       }
     },
@@ -151,6 +190,42 @@ export default {
       } else {
         this.$router.push(`/document/${this.$route.params.documentId}`)
       }
+    },
+    formatDate(dateString) {
+      return new Date(dateString).toLocaleDateString('ja-JP', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      })
+    },
+    highlightChanges(before, after) {
+      if (!before) return after
+
+      const tags = []
+      const processedBefore = before.replace(/<[^>]+>/g, match => {
+        tags.push(match)
+        return `___TAG${tags.length - 1}___`
+      })
+      const processedAfter = after.replace(/<[^>]+>/g, match => {
+        const index = tags.indexOf(match)
+        if (index === -1) {
+          tags.push(match)
+        }
+        return `___TAG${tags.indexOf(match)}___`
+      })
+
+      const diff = diffChars(processedBefore, processedAfter)
+      
+      let result = ''
+      diff.forEach(part => {
+        if (!part.added && !part.removed) {
+          result += part.value
+        } else if (part.added) {
+          result += `<span class="diff-added">${part.value}</span>`
+        }
+      })
+
+      return result.replace(/___TAG(\d+)___/g, (_, i) => tags[i])
     }
   }
 }
@@ -293,6 +368,96 @@ export default {
   margin-right: 8px;
 }
 
+/* 改訂履歴のスタイル */
+.revision-history {
+  margin-top: 30px;
+  border-top: 1px solid #e1e8ed;
+  padding-top: 20px;
+}
+
+.revision-history h3 {
+  color: #1da1f2;
+  margin-bottom: 15px;
+}
+
+.revision-section {
+  background: white;
+  border: 1px solid #e1e8ed;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+.revision-title {
+  padding: 12px 16px;
+  background-color: #f7f9fa;
+  border-bottom: 1px solid #e1e8ed;
+  margin: 0;
+  font-size: 1.1em;
+  color: #14171a;
+}
+
+.article-container {
+  padding: 16px;
+}
+
+.article-status {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  margin-bottom: 10px;
+  font-size: 0.9em;
+  font-weight: bold;
+}
+
+.article-status.改正 {
+  background-color: #e6f3ff;
+  color: #0366d6;
+}
+
+.article-status.新設 {
+  background-color: #e6ffed;
+  color: #28a745;
+}
+
+.comparison-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.comparison-column {
+  background-color: #f8f9fa;
+  padding: 12px;
+  border-radius: 4px;
+}
+
+.comparison-column h5 {
+  margin: 0 0 8px 0;
+  font-size: 0.9em;
+  color: #586069;
+}
+
+.content {
+  white-space: pre-wrap;
+  line-height: 1.6;
+  font-size: 14px;
+}
+
+.no-content {
+  color: #666;
+  font-style: italic;
+  padding: 8px 0;
+  font-size: 14px;
+}
+
+:deep(.diff-added) {
+  background-color: #e6ffed;
+  text-decoration: underline;
+  text-decoration-color: #28a745;
+  text-decoration-thickness: 2px;
+}
+
 @media (max-width: 768px) {
   .tweet-profile-header {
     padding: 40px 20px;
@@ -310,6 +475,15 @@ export default {
 
   .qa-content {
     padding: 15px;
+  }
+
+  .comparison-container {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .comparison-column {
+    padding: 10px;
   }
 }
 </style>
