@@ -17,6 +17,16 @@
     <div v-for="revision in filteredRevisions" :key="revision.id" class="revision-section">
       <h2 class="revision-title">{{ revision.title }} ({{ formatDate(revision.date) }})</h2>
       
+      <div v-if="revision.description" class="revision-description">
+        <h3>参考情報:</h3>
+        <p>{{ revision.description }}</p>
+      </div>
+
+      <div v-if="revision.url" class="revision-url">
+        <h3>参考リンク:</h3>
+        <a :href="revision.url" target="_blank" rel="noopener noreferrer">{{ revision.url }}</a>
+      </div>
+      
       <div v-for="article in revision.articles" :key="article.id" class="article-container">
         <div class="article-status" :class="article.status">{{ article.status }}</div>
         <div class="comparison-container">
@@ -52,17 +62,14 @@ export default {
 
     onMounted(() => {
       document.value = documentsData[route.params.id]
-      // URL から revision パラメータを取得
       selectedRevision.value = route.query.revision || ''
     })
 
-    // URL パラメータが変更されたときに選択を更新
     watch(() => route.query.revision, (newRevision) => {
       selectedRevision.value = newRevision || ''
     })
 
     const onRevisionChange = () => {
-      // 選択が変更されたときに URL を更新
       router.replace({
         query: {
           ...route.query,
@@ -88,9 +95,8 @@ export default {
     }
 
     const highlightChanges = (before, after) => {
-      if (!before) return after // 新設の場合は下線なしで表示
+      if (!before) return after
 
-      // HTMLタグを一時的にプレースホルダーに置き換え
       const tags = []
       const processedBefore = before.replace(/<[^>]+>/g, match => {
         tags.push(match)
@@ -104,10 +110,8 @@ export default {
         return `___TAG${tags.indexOf(match)}___`
       })
 
-      // 差分を計算
       const diff = diffChars(processedBefore, processedAfter)
       
-      // 差分をマークアップ
       let result = ''
       diff.forEach(part => {
         if (!part.added && !part.removed) {
@@ -117,7 +121,6 @@ export default {
         }
       })
 
-      // HTMLタグを復元
       return result.replace(/___TAG(\d+)___/g, (_, i) => tags[i])
     }
 
@@ -191,6 +194,36 @@ h1 {
   border-bottom: 1px solid #e1e8ed;
   margin: 0;
   font-size: 1.2em;
+}
+
+.revision-description,
+.revision-url {
+  padding: 15px 20px;
+  border-bottom: 1px solid #e1e8ed;
+  background-color: #f8f9fa;
+}
+
+.revision-description h3,
+.revision-url h3 {
+  color: #586069;
+  font-size: 1em;
+  margin-bottom: 8px;
+}
+
+.revision-description p {
+  margin: 0;
+  line-height: 1.6;
+  color: #24292e;
+}
+
+.revision-url a {
+  color: #0366d6;
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.revision-url a:hover {
+  text-decoration: underline;
 }
 
 .article-container {
@@ -284,6 +317,11 @@ h1 {
   .revision-select {
     width: 100%;
     max-width: 300px;
+  }
+
+  .revision-description,
+  .revision-url {
+    padding: 12px 15px;
   }
 }
 </style>
