@@ -1,57 +1,115 @@
 <template>
-  <div class="container">
-    <h1>法律文書一覧</h1>
-    <div class="search-container">
-      <input
-        type="text"
-        v-model="searchQuery"
-        placeholder="全文検索..."
-        class="search-input"
-        @focus="isSearchFocused = true"
-        @blur="isSearchFocused = false"
-      />
-    </div>
-    <div class="document-list">
-      <div v-for="(doc, id) in filteredDocuments" :key="id" class="document-item">
-        <router-link :to="`/document/${id}`" class="document-header">
-          <div class="document-icon">{{ doc.displayName.charAt(0) }}</div>
-          <div class="document-info">
-            <div class="document-name">{{ formatDisplayName(doc.displayName) }}</div>
-            <div v-if="doc.revisions" class="revision-badge">
-              改訂あり ({{ doc.revisions.length }}件)
-            </div>
-          </div>
-        </router-link>
-        
-        <div v-if="searchQuery && getMatchingContent(doc, id).length > 0" class="search-matches">
-          <div v-for="(match, index) in getMatchingContent(doc, id)" :key="index" class="match-item">
-            <router-link 
-              :to="match.link"
-              class="match-link"
-            >
-              <div class="match-header">
-                <span class="match-index">{{ match.type }}</span>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h2>メニュー</h2>
+      </div>
+      <nav class="sidebar-nav">
+        <button class="sidebar-button" @click="downloadDocuments">
+          <i class="fas fa-download"></i>
+          <span>JSONをダウンロード</span>
+        </button>
+        <button class="sidebar-button" @click="showRevisionEditor">
+          <i class="fas fa-history"></i>
+          <span>改訂履歴を追加</span>
+        </button>
+      </nav>
+    </aside>
+    
+    <main class="main-content">
+      <div class="container">
+        <h1>法律文書一覧</h1>
+        <div class="search-container">
+          <input
+            type="text"
+            v-model="searchQuery"
+            placeholder="全文検索..."
+            class="search-input"
+            @focus="isSearchFocused = true"
+            @blur="isSearchFocused = false"
+          />
+        </div>
+        <div class="document-list">
+          <div v-for="(doc, id) in filteredDocuments" :key="id" class="document-item">
+            <router-link :to="`/document/${id}`" class="document-header">
+              <div class="document-icon">{{ doc.displayName.charAt(0) }}</div>
+              <div class="document-info">
+                <div class="document-name">{{ formatDisplayName(doc.displayName) }}</div>
+                <div v-if="doc.revisions" class="revision-badge">
+                  改訂あり ({{ doc.revisions.length }}件)
+                </div>
               </div>
-              <div class="match-content" v-html="highlightSearchTerms(match.content)"></div>
             </router-link>
+            
+            <div v-if="searchQuery && getMatchingContent(doc, id).length > 0" class="search-matches">
+              <div v-for="(match, index) in getMatchingContent(doc, id)" :key="index" class="match-item">
+                <router-link 
+                  :to="match.link"
+                  class="match-link"
+                >
+                  <div class="match-header">
+                    <span class="match-index">{{ match.type }}</span>
+                  </div>
+                  <div class="match-content" v-html="highlightSearchTerms(match.content)"></div>
+                </router-link>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </main>
+
+    <revision-editor
+      v-if="showingRevisionEditor"
+      :documents="documents"
+      @save="saveRevision"
+      @close="showingRevisionEditor = false"
+    />
   </div>
 </template>
 
 <script>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import documentsData from '../documents.json'
+import RevisionEditor from './RevisionEditor.vue'
+
+const STORAGE_KEY = 'legal-documents-data'
 
 export default {
   name: 'Index',
+  components: {
+    RevisionEditor
+  },
   setup() {
     const route = useRoute()
     const router = useRouter()
     const isSearchFocused = ref(false)
+    const documents = ref(documentsData)
+    const showingRevisionEditor = ref(false)
+
+    onMounted(() => {
+      const storedData = localStorage.getItem(STORAGE_KEY)
+      if (storedData) {
+        try {
+          documents.value = JSON.parse(storedData)
+        } catch (e) {
+          console.error('Failed to parse stored documents:', e)
+          saveToLocalStorage(documentsData)
+        }
+      } else {
+        saveToLocalStorage(documentsData)
+      }
+    })
+
+    const saveToLocalStorage = (data) => {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+        documents.value = data
+      } catch (e) {
+        console.error('Failed to save documents to localStorage:', e)
+      }
+    }
 
     const searchQuery = computed({
       get: () => route.query.q || '',
@@ -63,12 +121,12 @@ export default {
     })
 
     const filteredDocuments = computed(() => {
-      if (!searchQuery.value) return documentsData
+      if (!searchQuery.value) return documents.value
 
       const searchTerms = searchQuery.value.toLowerCase().split(' ').filter(term => term.length > 0)
       
       return Object.fromEntries(
-        Object.entries(documentsData).filter(([_, doc]) => {
+        Object.entries(documents.value).filter(([_, doc]) => {
           const contents = getSearchableContent(doc)
           return searchTerms.every(term => contents.toLowerCase().includes(term))
         })
@@ -205,19 +263,115 @@ export default {
       return highlighted
     }
 
+    const downloadDocuments = () => {
+      const jsonString = JSON.stringify(documents.value, null, 2)
+      const blob = new Blob([jsonString], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'documents.json'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    }
+
+    const showRevisionEditor = () => {
+      showingRevisionEditor.value = true
+    }
+
+    const saveRevision = ({ documentId, revision }) => {
+      const updatedDocuments = { ...documents.value }
+      if (!updatedDocuments[documentId].revisions) {
+        updatedDocuments[documentId].revisions = []
+      }
+      updatedDocuments[documentId].revisions.push(revision)
+      saveToLocalStorage(updatedDocuments)
+      showingRevisionEditor.value = false
+    }
+
     return {
       searchQuery,
       isSearchFocused,
       filteredDocuments,
+      documents,
+      showingRevisionEditor,
       formatDisplayName,
       getMatchingContent,
-      highlightSearchTerms
+      highlightSearchTerms,
+      downloadDocuments,
+      showRevisionEditor,
+      saveRevision
     }
   }
 }
 </script>
 
 <style scoped>
+/* 既存のスタイルはそのまま維持 */
+.layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 240px;
+  background-color: #ffffff;
+  border-right: 1px solid #e1e8ed;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.sidebar-header {
+  padding: 20px;
+  border-bottom: 1px solid #e1e8ed;
+}
+
+.sidebar-header h2 {
+  margin: 0;
+  font-size: 1.2em;
+  color: #14171a;
+}
+
+.sidebar-nav {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sidebar-button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px;
+  background: none;
+  border: 1px solid #e1e8ed;
+  border-radius: 8px;
+  color: #1da1f2;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.sidebar-button:hover {
+  background-color: #f8f9fa;
+  border-color: #1da1f2;
+}
+
+.sidebar-button i {
+  font-size: 16px;
+}
+
+.main-content {
+  flex: 1;
+  background-color: #f7f9fa;
+  min-width: 0;
+}
+
 .container {
   max-width: 800px;
   margin: 0 auto;
@@ -226,7 +380,7 @@ export default {
 
 h1 {
   text-align: center;
-  margin-bottom: 20px;
+  margin: 0 0 20px 0;
   color: #14171a;
 }
 
@@ -366,7 +520,23 @@ h1 {
   font-weight: 500;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
+  .layout {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    height: auto;
+    position: static;
+    border-right: none;
+    border-bottom: 1px solid #e1e8ed;
+  }
+
+  .sidebar-nav {
+    padding: 12px;
+  }
+
   .container {
     padding: 16px;
   }

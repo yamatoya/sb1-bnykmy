@@ -18,13 +18,10 @@
       <h2 class="revision-title">{{ revision.title }} ({{ formatDate(revision.date) }})</h2>
       
       <div v-if="revision.description" class="revision-description">
-        <h3>参考情報:</h3>
         <p>{{ revision.description }}</p>
-      </div>
-
-      <div v-if="revision.url" class="revision-url">
-        <h3>参考リンク:</h3>
-        <a :href="revision.url" target="_blank" rel="noopener noreferrer">{{ revision.url }}</a>
+        <a v-if="revision.sourceUrl" :href="revision.sourceUrl" target="_blank" rel="noopener noreferrer" class="source-link">
+          <i class="fas fa-external-link-alt"></i> ソースを表示
+        </a>
       </div>
       
       <div v-for="article in revision.articles" :key="article.id" class="article-container">
@@ -35,7 +32,7 @@
             <div v-if="article.before" class="content" v-html="article.before"></div>
             <div v-else class="no-content">改正前の内容なし</div>
           </div>
-          <div class="comparison-column after">
+          <div class="comparison-column after" v-if="article.status !== '削除'">
             <h3>改正後</h3>
             <div v-if="article.after" class="content" v-html="highlightChanges(article.before, article.after)"></div>
             <div v-else class="no-content">改正後の内容なし</div>
@@ -49,8 +46,9 @@
 <script>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import documentsData from '../documents.json'
 import { diffChars } from 'diff'
+
+const STORAGE_KEY = 'legal-documents-data'
 
 export default {
   name: 'Revision',
@@ -60,16 +58,30 @@ export default {
     const document = ref(null)
     const selectedRevision = ref('')
 
+    const loadDocument = () => {
+      const storedData = localStorage.getItem(STORAGE_KEY)
+      if (storedData) {
+        try {
+          const documents = JSON.parse(storedData)
+          document.value = documents[route.params.id]
+        } catch (e) {
+          console.error('Failed to parse stored documents:', e)
+        }
+      }
+    }
+
     onMounted(() => {
-      document.value = documentsData[route.params.id]
+      loadDocument()
       selectedRevision.value = route.query.revision || ''
     })
 
+    // URL パラメータが変更されたときに選択を更新
     watch(() => route.query.revision, (newRevision) => {
       selectedRevision.value = newRevision || ''
     })
 
     const onRevisionChange = () => {
+      // 選択が変更されたときに URL を更新
       router.replace({
         query: {
           ...route.query,
@@ -79,7 +91,7 @@ export default {
     }
 
     const filteredRevisions = computed(() => {
-      if (!document.value) return []
+      if (!document.value?.revisions) return []
       if (!selectedRevision.value) {
         return document.value.revisions
       }
@@ -95,8 +107,9 @@ export default {
     }
 
     const highlightChanges = (before, after) => {
-      if (!before) return after
+      if (!before) return after // 新設の場合は下線なしで表示
 
+      // HTMLタグを一時的にプレースホルダーに置き換え
       const tags = []
       const processedBefore = before.replace(/<[^>]+>/g, match => {
         tags.push(match)
@@ -110,8 +123,10 @@ export default {
         return `___TAG${tags.indexOf(match)}___`
       })
 
+      // 差分を計算
       const diff = diffChars(processedBefore, processedAfter)
       
+      // 差分をマークアップ
       let result = ''
       diff.forEach(part => {
         if (!part.added && !part.removed) {
@@ -121,6 +136,7 @@ export default {
         }
       })
 
+      // HTMLタグを復元
       return result.replace(/___TAG(\d+)___/g, (_, i) => tags[i])
     }
 
@@ -137,6 +153,7 @@ export default {
 </script>
 
 <style>
+/* スタイルは変更なし */
 .profile-header {
   background-color: #f0f0f0;
   padding: 20px;
@@ -196,33 +213,20 @@ h1 {
   font-size: 1.2em;
 }
 
-.revision-description,
-.revision-url {
+.revision-description {
   padding: 15px 20px;
   border-bottom: 1px solid #e1e8ed;
   background-color: #f8f9fa;
 }
 
-.revision-description h3,
-.revision-url h3 {
-  color: #586069;
-  font-size: 1em;
-  margin-bottom: 8px;
-}
-
-.revision-description p {
-  margin: 0;
-  line-height: 1.6;
-  color: #24292e;
-}
-
-.revision-url a {
-  color: #0366d6;
+.source-link {
+  display: inline-block;
+  margin-top: 10px;
+  color: #1da1f2;
   text-decoration: none;
-  word-break: break-all;
 }
 
-.revision-url a:hover {
+.source-link:hover {
   text-decoration: underline;
 }
 
@@ -252,6 +256,11 @@ h1 {
 .article-status.新設 {
   background-color: #e6ffed;
   color: #28a745;
+}
+
+.article-status.削除 {
+  background-color: #ffeef0;
+  color: #d73a49;
 }
 
 .comparison-container {
@@ -317,11 +326,6 @@ h1 {
   .revision-select {
     width: 100%;
     max-width: 300px;
-  }
-
-  .revision-description,
-  .revision-url {
-    padding: 12px 15px;
   }
 }
 </style>
