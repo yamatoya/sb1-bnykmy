@@ -9,13 +9,17 @@
           <i class="fas fa-download"></i>
           <span>JSONをダウンロード</span>
         </button>
-        <button class="sidebar-button" @click="showRevisionEditor">
-          <i class="fas fa-history"></i>
-          <span>改訂履歴を追加</span>
-        </button>
         <button class="sidebar-button" @click="showJsonDiffViewer">
           <i class="fas fa-code"></i>
           <span>JSON差分を表示</span>
+        </button>
+        <button class="sidebar-button" @click="showRevisionList">
+          <i class="fas fa-edit"></i>
+          <span>改訂履歴を編集</span>
+        </button>
+        <button class="sidebar-button warning" @click="resetToDefault">
+          <i class="fas fa-sync-alt"></i>
+          <span>データをリセット</span>
         </button>
       </nav>
     </aside>
@@ -63,16 +67,16 @@
       </div>
     </main>
 
-    <revision-editor
-      v-if="showingRevisionEditor"
-      :documents="documents"
-      @save="saveRevision"
-      @close="showingRevisionEditor = false"
-    />
-
     <json-diff-viewer
       v-if="showingJsonDiffViewer"
       @close="showingJsonDiffViewer = false"
+    />
+
+    <revision-list
+      v-if="showingRevisionList"
+      :documents="documents"
+      @save="updateRevisions"
+      @close="showingRevisionList = false"
     />
   </div>
 </template>
@@ -81,24 +85,24 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import documentsData from '../documents.json'
-import RevisionEditor from './RevisionEditor.vue'
 import JsonDiffViewer from './JsonDiffViewer.vue'
+import RevisionList from './RevisionList.vue'
 
 const STORAGE_KEY = 'legal-documents-data'
 
 export default {
   name: 'Index',
   components: {
-    RevisionEditor,
-    JsonDiffViewer
+    JsonDiffViewer,
+    RevisionList
   },
   setup() {
     const route = useRoute()
     const router = useRouter()
     const isSearchFocused = ref(false)
     const documents = ref(documentsData)
-    const showingRevisionEditor = ref(false)
     const showingJsonDiffViewer = ref(false)
+    const showingRevisionList = ref(false)
     const searchQuery = ref('')
 
     onMounted(() => {
@@ -288,22 +292,25 @@ export default {
       URL.revokeObjectURL(url)
     }
 
-    const showRevisionEditor = () => {
-      showingRevisionEditor.value = true
-    }
-
     const showJsonDiffViewer = () => {
       showingJsonDiffViewer.value = true
     }
 
-    const saveRevision = ({ documentId, revision }) => {
-      const updatedDocuments = { ...documents.value }
-      if (!updatedDocuments[documentId].revisions) {
-        updatedDocuments[documentId].revisions = []
+    const showRevisionList = () => {
+      showingRevisionList.value = true
+    }
+
+    const resetToDefault = () => {
+      if (confirm('データをリセットしてもよろしいですか？\n※この操作は元に戻せません。')) {
+        saveToLocalStorage(documentsData)
       }
-      updatedDocuments[documentId].revisions.push(revision)
+    }
+
+    const updateRevisions = ({ documentId, revisions }) => {
+      const updatedDocuments = { ...documents.value }
+      updatedDocuments[documentId].revisions = revisions
       saveToLocalStorage(updatedDocuments)
-      showingRevisionEditor.value = false
+      showingRevisionList.value = false
     }
 
     return {
@@ -311,15 +318,16 @@ export default {
       isSearchFocused,
       filteredDocuments,
       documents,
-      showingRevisionEditor,
       showingJsonDiffViewer,
+      showingRevisionList,
       formatDisplayName,
       getMatchingContent,
       highlightSearchTerms,
       downloadDocuments,
-      showRevisionEditor,
       showJsonDiffViewer,
-      saveRevision
+      showRevisionList,
+      resetToDefault,
+      updateRevisions
     }
   }
 }
@@ -377,6 +385,15 @@ export default {
 .sidebar-button:hover {
   background-color: #f8f9fa;
   border-color: #1da1f2;
+}
+
+.sidebar-button.warning {
+  color: #e0245e;
+  border-color: #e0245e;
+}
+
+.sidebar-button.warning:hover {
+  background-color: #fff1f3;
 }
 
 .sidebar-button i {

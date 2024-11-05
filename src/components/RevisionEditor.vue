@@ -2,14 +2,14 @@
   <div class="modal-overlay" @click="$emit('close')">
     <div class="modal-content" @click.stop>
       <div class="modal-header">
-        <h2>改訂履歴の追加</h2>
+        <h2>{{ initialRevision ? '改訂履歴の編集' : '改訂履歴の追加' }}</h2>
         <button class="close-button" @click="$emit('close')">&times;</button>
       </div>
 
       <div class="modal-body">
         <div class="form-group">
           <label>対象文書</label>
-          <select v-model="selectedDocument" class="form-control">
+          <select v-model="documentId" class="form-control" :disabled="!!initialRevision">
             <option value="">文書を選択してください</option>
             <option v-for="(doc, id) in documents" :key="id" :value="id">
               {{ doc.displayName }}
@@ -43,7 +43,7 @@
             <i class="fas fa-plus"></i> 条文を追加
           </button>
 
-          <div v-for="(article, index) in articles" :key="index" class="article-item">
+          <div v-for="(article, index) in articles" :key="article.id" class="article-item">
             <div class="article-header">
               <h4>条文 {{ index + 1 }}</h4>
               <button class="remove-article-button" @click="removeArticle(index)">
@@ -84,7 +84,7 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { v4 as uuidv4 } from 'uuid'
 
 export default {
@@ -93,18 +93,41 @@ export default {
     documents: {
       type: Object,
       required: true
+    },
+    initialRevision: {
+      type: Object,
+      default: null
+    },
+    selectedDocument: {
+      type: String,
+      default: ''
     }
   },
   setup(props, { emit }) {
-    const selectedDocument = ref('')
+    const documentId = ref(props.selectedDocument)
     const title = ref('')
     const date = ref('')
     const description = ref('')
     const sourceUrl = ref('')
     const articles = ref([])
 
+    onMounted(() => {
+      if (props.initialRevision) {
+        // 既存の改訂データを読み込む
+        documentId.value = props.selectedDocument
+        title.value = props.initialRevision.title
+        date.value = props.initialRevision.date
+        description.value = props.initialRevision.description || ''
+        sourceUrl.value = props.initialRevision.sourceUrl || ''
+        articles.value = props.initialRevision.articles.map(article => ({
+          ...article,
+          id: article.id || uuidv4()
+        }))
+      }
+    })
+
     const isValid = computed(() => {
-      return selectedDocument.value &&
+      return documentId.value &&
              title.value &&
              date.value &&
              articles.value.length > 0 &&
@@ -130,7 +153,7 @@ export default {
 
     const saveRevision = () => {
       const revision = {
-        id: uuidv4(),
+        id: props.initialRevision?.id || uuidv4(),
         title: title.value,
         date: date.value,
         description: description.value,
@@ -138,14 +161,11 @@ export default {
         articles: articles.value
       }
 
-      emit('save', {
-        documentId: selectedDocument.value,
-        revision
-      })
+      emit('save', revision)
     }
 
     return {
-      selectedDocument,
+      documentId,
       title,
       date,
       description,
@@ -206,14 +226,6 @@ export default {
 
 .modal-body {
   padding: 20px;
-}
-
-.modal-footer {
-  padding: 20px;
-  border-top: 1px solid #e1e8ed;
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
 }
 
 .form-group {
