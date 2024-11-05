@@ -13,6 +13,10 @@
           <i class="fas fa-history"></i>
           <span>改訂履歴を追加</span>
         </button>
+        <button class="sidebar-button" @click="showJsonDiffViewer">
+          <i class="fas fa-code"></i>
+          <span>JSON差分を表示</span>
+        </button>
       </nav>
     </aside>
     
@@ -65,21 +69,28 @@
       @save="saveRevision"
       @close="showingRevisionEditor = false"
     />
+
+    <json-diff-viewer
+      v-if="showingJsonDiffViewer"
+      @close="showingJsonDiffViewer = false"
+    />
   </div>
 </template>
 
 <script>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import documentsData from '../documents.json'
 import RevisionEditor from './RevisionEditor.vue'
+import JsonDiffViewer from './JsonDiffViewer.vue'
 
 const STORAGE_KEY = 'legal-documents-data'
 
 export default {
   name: 'Index',
   components: {
-    RevisionEditor
+    RevisionEditor,
+    JsonDiffViewer
   },
   setup() {
     const route = useRoute()
@@ -87,6 +98,8 @@ export default {
     const isSearchFocused = ref(false)
     const documents = ref(documentsData)
     const showingRevisionEditor = ref(false)
+    const showingJsonDiffViewer = ref(false)
+    const searchQuery = ref('')
 
     onMounted(() => {
       const storedData = localStorage.getItem(STORAGE_KEY)
@@ -100,6 +113,8 @@ export default {
       } else {
         saveToLocalStorage(documentsData)
       }
+
+      searchQuery.value = route.query.q || ''
     })
 
     const saveToLocalStorage = (data) => {
@@ -111,13 +126,10 @@ export default {
       }
     }
 
-    const searchQuery = computed({
-      get: () => route.query.q || '',
-      set: (value) => {
-        router.replace({
-          query: { ...route.query, q: value || undefined }
-        })
-      }
+    watch(searchQuery, (newValue) => {
+      router.replace({
+        query: { ...route.query, q: newValue || undefined }
+      })
     })
 
     const filteredDocuments = computed(() => {
@@ -280,6 +292,10 @@ export default {
       showingRevisionEditor.value = true
     }
 
+    const showJsonDiffViewer = () => {
+      showingJsonDiffViewer.value = true
+    }
+
     const saveRevision = ({ documentId, revision }) => {
       const updatedDocuments = { ...documents.value }
       if (!updatedDocuments[documentId].revisions) {
@@ -296,11 +312,13 @@ export default {
       filteredDocuments,
       documents,
       showingRevisionEditor,
+      showingJsonDiffViewer,
       formatDisplayName,
       getMatchingContent,
       highlightSearchTerms,
       downloadDocuments,
       showRevisionEditor,
+      showJsonDiffViewer,
       saveRevision
     }
   }
@@ -308,7 +326,6 @@ export default {
 </script>
 
 <style scoped>
-/* 既存のスタイルはそのまま維持 */
 .layout {
   display: flex;
   min-height: 100vh;
