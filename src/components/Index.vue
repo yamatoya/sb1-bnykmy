@@ -1,29 +1,5 @@
 <template>
   <div class="layout">
-    <aside class="sidebar">
-      <div class="sidebar-header">
-        <h2>メニュー</h2>
-      </div>
-      <nav class="sidebar-nav">
-        <button class="sidebar-button" @click="downloadDocuments">
-          <i class="fas fa-download"></i>
-          <span>JSONをダウンロード</span>
-        </button>
-        <button class="sidebar-button" @click="showJsonDiffViewer">
-          <i class="fas fa-code"></i>
-          <span>JSON差分を表示</span>
-        </button>
-        <button class="sidebar-button" @click="showRevisionList">
-          <i class="fas fa-edit"></i>
-          <span>改訂履歴を編集</span>
-        </button>
-        <button class="sidebar-button warning" @click="resetToDefault">
-          <i class="fas fa-sync-alt"></i>
-          <span>データをリセット</span>
-        </button>
-      </nav>
-    </aside>
-    
     <main class="main-content">
       <div class="container">
         <h1>法律文書一覧</h1>
@@ -66,6 +42,29 @@
         </div>
       </div>
     </main>
+
+    <footer class="footer">
+      <div class="footer-content">
+        <div class="footer-buttons">
+          <button class="footer-button" @click="downloadDocuments">
+            <i class="fas fa-download"></i>
+            <span>JSONをダウンロード</span>
+          </button>
+          <button class="footer-button" @click="showJsonDiffViewer">
+            <i class="fas fa-code"></i>
+            <span>JSON差分を表示</span>
+          </button>
+          <button class="footer-button" @click="showRevisionList">
+            <i class="fas fa-edit"></i>
+            <span>改訂履歴を編集</span>
+          </button>
+          <button class="footer-button warning" @click="resetToDefault">
+            <i class="fas fa-sync-alt"></i>
+            <span>データをリセット</span>
+          </button>
+        </div>
+      </div>
+    </footer>
 
     <json-diff-viewer
       v-if="showingJsonDiffViewer"
@@ -336,97 +335,38 @@ export default {
 <style scoped>
 .layout {
   display: flex;
-  min-height: 100vh;
-}
-
-.sidebar {
-  width: 240px;
-  background-color: #ffffff;
-  border-right: 1px solid #e1e8ed;
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  overflow-y: auto;
-}
-
-.sidebar-header {
-  padding: 20px;
-  border-bottom: 1px solid #e1e8ed;
-}
-
-.sidebar-header h2 {
-  margin: 0;
-  font-size: 1.2em;
-  color: #14171a;
-}
-
-.sidebar-nav {
-  padding: 16px;
-  display: flex;
   flex-direction: column;
-  gap: 12px;
-}
-
-.sidebar-button {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  padding: 12px;
-  background: none;
-  border: 1px solid #e1e8ed;
-  border-radius: 8px;
-  color: #1da1f2;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.2s ease;
-}
-
-.sidebar-button:hover {
-  background-color: #f8f9fa;
-  border-color: #1da1f2;
-}
-
-.sidebar-button.warning {
-  color: #e0245e;
-  border-color: #e0245e;
-}
-
-.sidebar-button.warning:hover {
-  background-color: #fff1f3;
-}
-
-.sidebar-button i {
-  font-size: 16px;
+  min-height: 100vh;
 }
 
 .main-content {
   flex: 1;
   background-color: #f7f9fa;
-  min-width: 0;
+  padding: 20px;
+  width: 100%;
 }
 
 .container {
-  max-width: 800px;
+  max-width: 1600px;
   margin: 0 auto;
-  padding: 20px;
+  width: 100%;
 }
 
 h1 {
   text-align: center;
   margin: 0 0 20px 0;
   color: #14171a;
+  font-size: 2em;
 }
 
 .search-container {
-  margin: 20px 0;
-  display: flex;
-  justify-content: center;
+  margin: 20px auto;
+  max-width: 800px;
+  padding: 0 20px;
 }
 
 .search-input {
   width: 100%;
-  max-width: 600px;
   padding: 12px 20px;
   border: 2px solid #e1e8ed;
   border-radius: 30px;
@@ -441,15 +381,25 @@ h1 {
 }
 
 .document-list {
-  margin-top: 20px;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 0 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+  gap: 20px;
 }
 
 .document-item {
   background: white;
   border: 1px solid #e1e8ed;
   border-radius: 12px;
-  margin-bottom: 16px;
   overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.document-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .document-header {
@@ -460,10 +410,6 @@ h1 {
   color: inherit;
   background: #f7f9fa;
   border-bottom: 1px solid #e1e8ed;
-}
-
-.document-header:hover {
-  background: #f0f3f5;
 }
 
 .document-icon {
@@ -491,7 +437,9 @@ h1 {
   font-weight: bold;
   color: #14171a;
   margin-bottom: 4px;
-  word-wrap: break-word;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .revision-badge {
@@ -509,7 +457,7 @@ h1 {
 }
 
 .match-item {
-  margin: 12px 0;
+  margin: 8px 0;
   background: #f8f9fa;
   border-radius: 8px;
   overflow: hidden;
@@ -554,25 +502,89 @@ h1 {
   font-weight: 500;
 }
 
+.footer {
+  background-color: #ffffff;
+  border-top: 1px solid #e1e8ed;
+  padding: 16px 0;
+  width: 100%;
+  margin-top: auto;
+}
+
+.footer-content {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.footer-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.footer-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border: 1px solid #e1e8ed;
+  border-radius: 20px;
+  background: white;
+  color: #1da1f2;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.footer-button:hover {
+  background-color: #f8f9fa;
+  border-color: #1da1f2;
+}
+
+.footer-button.warning {
+  color: #e0245e;
+  border-color: #e0245e;
+}
+
+.footer-button.warning:hover {
+  background-color: #fff1f3;
+}
+
+.footer-button i {
+  font-size: 16px;
+}
+
+@media (min-width: 1800px) {
+  .document-list {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 1400px) {
+  .document-list {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 1100px) {
+  .document-list {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 768px) {
-  .layout {
-    flex-direction: column;
-  }
-
-  .sidebar {
-    width: 100%;
-    height: auto;
-    position: static;
-    border-right: none;
-    border-bottom: 1px solid #e1e8ed;
-  }
-
-  .sidebar-nav {
-    padding: 12px;
-  }
-
-  .container {
+  .main-content {
     padding: 16px;
+  }
+
+  .search-container {
+    padding: 0 16px;
+  }
+
+  .document-list {
+    padding: 0 16px;
+    gap: 16px;
   }
 
   .document-header {
@@ -590,8 +602,33 @@ h1 {
     font-size: 16px;
   }
 
-  .search-matches {
-    padding: 8px 12px;
+  .footer {
+    padding: 12px 0;
+  }
+
+  .footer-buttons {
+    gap: 12px;
+  }
+
+  .footer-button {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .search-input {
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+
+  .footer-buttons {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .footer-button {
+    justify-content: center;
   }
 }
 </style>
