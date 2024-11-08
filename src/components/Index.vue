@@ -54,10 +54,10 @@
             <i class="fas fa-code"></i>
             <span>JSON差分を表示</span>
           </button>
-          <button class="footer-button" @click="showRevisionList">
+          <router-link to="/revisions" class="footer-button">
             <i class="fas fa-edit"></i>
             <span>改訂履歴を編集</span>
-          </button>
+          </router-link>
           <button class="footer-button warning" @click="resetToDefault">
             <i class="fas fa-sync-alt"></i>
             <span>データをリセット</span>
@@ -70,13 +70,6 @@
       v-if="showingJsonDiffViewer"
       @close="showingJsonDiffViewer = false"
     />
-
-    <revision-list
-      v-if="showingRevisionList"
-      :documents="documents"
-      @save="updateRevisions"
-      @close="showingRevisionList = false"
-    />
   </div>
 </template>
 
@@ -85,15 +78,13 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import documentsData from '../documents.json'
 import JsonDiffViewer from './JsonDiffViewer.vue'
-import RevisionList from './RevisionList.vue'
 
 const STORAGE_KEY = 'legal-documents-data'
 
 export default {
   name: 'Index',
   components: {
-    JsonDiffViewer,
-    RevisionList
+    JsonDiffViewer
   },
   setup() {
     const route = useRoute()
@@ -101,7 +92,6 @@ export default {
     const isSearchFocused = ref(false)
     const documents = ref(documentsData)
     const showingJsonDiffViewer = ref(false)
-    const showingRevisionList = ref(false)
     const searchQuery = ref('')
 
     onMounted(() => {
@@ -295,21 +285,10 @@ export default {
       showingJsonDiffViewer.value = true
     }
 
-    const showRevisionList = () => {
-      showingRevisionList.value = true
-    }
-
     const resetToDefault = () => {
       if (confirm('データをリセットしてもよろしいですか？\n※この操作は元に戻せません。')) {
         saveToLocalStorage(documentsData)
       }
-    }
-
-    const updateRevisions = ({ documentId, revisions }) => {
-      const updatedDocuments = { ...documents.value }
-      updatedDocuments[documentId].revisions = revisions
-      saveToLocalStorage(updatedDocuments)
-      showingRevisionList.value = false
     }
 
     return {
@@ -318,15 +297,12 @@ export default {
       filteredDocuments,
       documents,
       showingJsonDiffViewer,
-      showingRevisionList,
       formatDisplayName,
       getMatchingContent,
       highlightSearchTerms,
       downloadDocuments,
       showJsonDiffViewer,
-      showRevisionList,
-      resetToDefault,
-      updateRevisions
+      resetToDefault
     }
   }
 }
@@ -343,11 +319,10 @@ export default {
   flex: 1;
   background-color: #f7f9fa;
   padding: 20px;
-  width: 100%;
 }
 
 .container {
-  max-width: 1600px;
+  max-width: 1400px;
   margin: 0 auto;
   width: 100%;
 }
@@ -356,17 +331,18 @@ h1 {
   text-align: center;
   margin: 0 0 20px 0;
   color: #14171a;
-  font-size: 2em;
+  font-size: 28px;
 }
 
 .search-container {
-  margin: 20px auto;
-  max-width: 800px;
-  padding: 0 20px;
+  margin: 20px 0;
+  display: flex;
+  justify-content: center;
 }
 
 .search-input {
   width: 100%;
+  max-width: 800px;
   padding: 12px 20px;
   border: 2px solid #e1e8ed;
   border-radius: 30px;
@@ -381,12 +357,10 @@ h1 {
 }
 
 .document-list {
-  max-width: 1600px;
-  margin: 0 auto;
-  padding: 0 20px;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
   gap: 20px;
+  margin-top: 20px;
 }
 
 .document-item {
@@ -394,12 +368,6 @@ h1 {
   border: 1px solid #e1e8ed;
   border-radius: 12px;
   overflow: hidden;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.document-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .document-header {
@@ -410,6 +378,11 @@ h1 {
   color: inherit;
   background: #f7f9fa;
   border-bottom: 1px solid #e1e8ed;
+  transition: background-color 0.2s ease;
+}
+
+.document-header:hover {
+  background: #f0f3f5;
 }
 
 .document-icon {
@@ -437,9 +410,7 @@ h1 {
   font-weight: bold;
   color: #14171a;
   margin-bottom: 4px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  word-wrap: break-word;
 }
 
 .revision-badge {
@@ -457,7 +428,7 @@ h1 {
 }
 
 .match-item {
-  margin: 8px 0;
+  margin: 12px 0;
   background: #f8f9fa;
   border-radius: 8px;
   overflow: hidden;
@@ -505,15 +476,15 @@ h1 {
 .footer {
   background-color: #ffffff;
   border-top: 1px solid #e1e8ed;
-  padding: 16px 0;
-  width: 100%;
-  margin-top: auto;
+  padding: 16px;
+  position: sticky;
+  bottom: 0;
+  z-index: 100;
 }
 
 .footer-content {
-  max-width: 1600px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 0 20px;
 }
 
 .footer-buttons {
@@ -528,49 +499,27 @@ h1 {
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  border: 1px solid #e1e8ed;
+  border: 1px solid #1da1f2;
   border-radius: 20px;
-  background: white;
+  background: none;
   color: #1da1f2;
   font-size: 14px;
   cursor: pointer;
+  text-decoration: none;
   transition: all 0.2s ease;
 }
 
 .footer-button:hover {
-  background-color: #f8f9fa;
-  border-color: #1da1f2;
+  background-color: rgba(29, 161, 242, 0.1);
 }
 
 .footer-button.warning {
-  color: #e0245e;
   border-color: #e0245e;
+  color: #e0245e;
 }
 
 .footer-button.warning:hover {
-  background-color: #fff1f3;
-}
-
-.footer-button i {
-  font-size: 16px;
-}
-
-@media (min-width: 1800px) {
-  .document-list {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-@media (max-width: 1400px) {
-  .document-list {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 1100px) {
-  .document-list {
-    grid-template-columns: 1fr;
-  }
+  background-color: rgba(224, 36, 94, 0.1);
 }
 
 @media (max-width: 768px) {
@@ -578,13 +527,12 @@ h1 {
     padding: 16px;
   }
 
-  .search-container {
-    padding: 0 16px;
+  .container {
+    padding: 0;
   }
 
   .document-list {
-    padding: 0 16px;
-    gap: 16px;
+    grid-template-columns: 1fr;
   }
 
   .document-header {
@@ -602,33 +550,31 @@ h1 {
     font-size: 16px;
   }
 
+  .search-matches {
+    padding: 8px 12px;
+  }
+
   .footer {
-    padding: 12px 0;
+    padding: 12px;
   }
 
   .footer-buttons {
-    gap: 12px;
+    gap: 8px;
   }
 
   .footer-button {
     padding: 6px 12px;
-    font-size: 13px;
+    font-size: 12px;
   }
 }
 
-@media (max-width: 480px) {
-  .search-input {
-    padding: 10px 16px;
-    font-size: 14px;
+@media (min-width: 1920px) {
+  .container {
+    max-width: 1800px;
   }
 
-  .footer-buttons {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .footer-button {
-    justify-content: center;
+  .document-list {
+    grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
   }
 }
 </style>

@@ -4,7 +4,8 @@ import { createRouter, createWebHistory } from 'vue-router'
 import Index from './components/Index.vue'
 import Document from './components/Document.vue'
 import Tweet from './components/Tweet.vue'
-import Revision from './components/Revision.vue'
+import RevisionPage from './components/RevisionPage.vue'
+import RevisionEditorPage from './components/RevisionEditorPage.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -12,7 +13,20 @@ const router = createRouter({
     { path: '/', component: Index },
     { path: '/document/:id', component: Document },
     { path: '/document/:documentId/:tweetId', component: Tweet, name: 'tweet' },
-    { path: '/document/:id/revisions', component: Revision, name: 'revision' }
+    { path: '/revisions', component: RevisionPage, name: 'revisions' },
+    { path: '/revisions/:documentId', component: RevisionPage, name: 'document-revisions' },
+    { 
+      path: '/revisions/:documentId/:action', 
+      component: RevisionEditorPage,
+      name: 'revision-editor-new',
+      props: true
+    },
+    { 
+      path: '/revisions/:documentId/edit/:revisionId', 
+      component: RevisionEditorPage,
+      name: 'revision-editor-edit',
+      props: true
+    }
   ]
 })
 
@@ -20,12 +34,4 @@ const app = createApp(App)
 app.use(router)
 app.mount('#app')
 
-// グローバルにルーターを公開
 window.$router = router
-
-// 404.htmlからのリダイレクトを処理
-const redirect = sessionStorage.getItem('redirect');
-if (redirect) {
-  sessionStorage.removeItem('redirect');
-  router.push(redirect);
-}
