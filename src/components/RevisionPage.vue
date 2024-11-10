@@ -1,15 +1,15 @@
 <template>
   <div class="revision-page">
     <header class="page-header">
-      <router-link to="/" class="back-link">
+      <router-link :to="backLink" class="back-link">
         <i class="fas fa-arrow-left"></i>
         <span>戻る</span>
       </router-link>
-      <h1>改訂履歴の編集</h1>
+      <h1>{{ pageTitle }}</h1>
     </header>
 
     <main class="page-content">
-      <div class="form-group">
+      <div v-if="!documentId" class="form-group">
         <label>対象文書</label>
         <select v-model="selectedDocument" class="form-control" @change="loadRevisions">
           <option value="">文書を選択してください</option>
@@ -19,7 +19,7 @@
         </select>
       </div>
 
-      <div v-if="selectedDocument" class="revisions-list">
+      <div v-if="currentDocument" class="revisions-list">
         <div class="revisions-header">
           <h2>改訂一覧</h2>
           <button class="add-revision-button" @click="addNewRevision">
@@ -28,11 +28,11 @@
           </button>
         </div>
 
-        <div v-if="currentRevisions.length === 0" class="no-revisions">
+        <div v-if="!currentDocument.revisions || currentDocument.revisions.length === 0" class="no-revisions">
           改訂履歴がありません
         </div>
         
-        <div v-else v-for="revision in currentRevisions" :key="revision.id" class="revision-item">
+        <div v-else v-for="revision in sortedRevisions" :key="revision.id" class="revision-item">
           <div class="revision-header">
             <h3>{{ revision.title }}</h3>
             <div class="revision-actions">
@@ -62,6 +62,23 @@
               </a>
             </div>
           </div>
+          <div class="articles-list">
+            <div v-for="article in revision.articles" :key="article.id" class="article-container">
+              <div class="article-status" :class="article.status">{{ article.status }}</div>
+              <div class="comparison-container">
+                <div v-if="article.status !== '新設'" class="comparison-column before">
+                  <h4>改正前</h4>
+                  <div v-if="article.before" class="content" v-html="article.before"></div>
+                  <div v-else class="no-content">改正前の内容なし</div>
+                </div>
+                <div v-if="article.status !== '削除'" class="comparison-column after">
+                  <h4>改正後</h4>
+                  <div v-if="article.after" class="content" v-html="article.after"></div>
+                  <div v-else class="no-content">改正後の内容なし</div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </main>
@@ -69,25 +86,42 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 const STORAGE_KEY = 'legal-documents-data'
 
 export default {
   name: 'RevisionPage',
-  props: {
-    documents: {
-      type: Object,
-      required: true
-    }
-  },
   setup() {
+    const route = useRoute()
     const router = useRouter()
-    const selectedDocument = ref('')
     const documents = ref(null)
+    const selectedDocument = ref('')
 
-    // LocalStorageからデータを読み込む
+    const documentId = computed(() => route.params.documentId || selectedDocument.value)
+    
+    const backLink = computed(() => {
+      return documentId.value ? `/document/${documentId.value}` : '/'
+    })
+
+    const pageTitle = computed(() => {
+      if (!currentDocument.value) return '改訂履歴の編集'
+      return `${currentDocument.value.displayName} - 改訂履歴`
+    })
+
+    const currentDocument = computed(() => {
+      if (!documents.value || !documentId.value) return null
+      return documents.value[documentId.value]
+    })
+
+    const sortedRevisions = computed(() => {
+      if (!currentDocument.value?.revisions) return []
+      return [...currentDocument.value.revisions].sort((a, b) => {
+        return new Date(b.date) - new Date(a.date)
+      })
+    })
+
     const loadDocuments = () => {
       const storedData = localStorage.getItem(STORAGE_KEY)
       if (storedData) {
@@ -98,15 +132,6 @@ export default {
         }
       }
     }
-
-    loadDocuments()
-
-    const currentRevisions = computed(() => {
-      if (!selectedDocument.value || !documents.value?.[selectedDocument.value]?.revisions) {
-        return []
-      }
-      return documents.value[selectedDocument.value].revisions
-    })
 
     const loadRevisions = () => {
       if (selectedDocument.value) {
@@ -123,18 +148,18 @@ export default {
     }
 
     const addNewRevision = () => {
-      router.push(`/revisions/${selectedDocument.value}/new`)
+      router.push(`/revisions/${documentId.value}/new`)
     }
 
     const editRevision = (revision) => {
-      router.push(`/revisions/${selectedDocument.value}/edit/${revision.id}`)
+      router.push(`/revisions/${documentId.value}/edit/${revision.id}`)
     }
 
     const deleteRevision = async (revision) => {
       if (confirm('この改訂履歴を削除してもよろしいですか？')) {
-        const updatedRevisions = currentRevisions.value.filter(r => r.id !== revision.id)
         const updatedDocuments = { ...documents.value }
-        updatedDocuments[selectedDocument.value].revisions = updatedRevisions
+        const doc = updatedDocuments[documentId.value]
+        doc.revisions = doc.revisions.filter(r => r.id !== revision.id)
         
         try {
           localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedDocuments))
@@ -146,10 +171,18 @@ export default {
       }
     }
 
+    onMounted(() => {
+      loadDocuments()
+    })
+
     return {
-      selectedDocument,
+      documentId,
       documents,
-      currentRevisions,
+      selectedDocument,
+      currentDocument,
+      sortedRevisions,
+      backLink,
+      pageTitle,
       loadRevisions,
       formatDate,
       addNewRevision,
@@ -192,6 +225,8 @@ h1 {
   margin: 0;
   font-size: 24px;
   color: #14171a;
+  flex-grow: 1;
+  text-align: center;
 }
 
 .page-content {
@@ -327,6 +362,7 @@ h1 {
 
 .revision-info {
   padding: 16px;
+  border-bottom: 1px solid #e1e8ed;
 }
 
 .info-row {
@@ -354,9 +390,82 @@ h1 {
   text-decoration: underline;
 }
 
+.articles-list {
+  padding: 16px;
+}
+
+.article-container {
+  margin-bottom: 24px;
+}
+
+.article-container:last-child {
+  margin-bottom: 0;
+}
+
+.article-status {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 14px;
+  font-weight: bold;
+  margin-bottom: 12px;
+}
+
+.article-status.改正 {
+  background-color: #e8f5fd;
+  color: #1da1f2;
+}
+
+.article-status.新設 {
+  background-color: #e6ffed;
+  color: #28a745;
+}
+
+.article-status.削除 {
+  background-color: #ffeef0;
+  color: #e0245e;
+}
+
+.comparison-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.comparison-column {
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.comparison-column h4 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: #657786;
+}
+
+.content {
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.6;
+}
+
+.no-content {
+  color: #657786;
+  font-style: italic;
+}
+
 @media (max-width: 768px) {
   .page-header {
     padding: 16px;
+    flex-wrap: wrap;
+  }
+
+  h1 {
+    font-size: 20px;
+    width: 100%;
+    order: -1;
+    margin-bottom: 12px;
   }
 
   .page-content {
@@ -371,6 +480,10 @@ h1 {
   .revision-actions {
     width: 100%;
     justify-content: flex-end;
+  }
+
+  .comparison-container {
+    grid-template-columns: 1fr;
   }
 
   .info-row {
