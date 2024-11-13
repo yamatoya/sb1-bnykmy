@@ -1,59 +1,151 @@
 <template>
-  <div v-if="document" class="tweet-container">
-    <div class="tweet-profile-header">
-      <router-link :to="backUrl" class="tweet-back-link">←</router-link>
-      <h1>{{ document.displayName }}</h1>
+  <div class="tweet-page">
+    <!-- デバッグ情報パネル -->
+    <div class="debug-panel">
+      <div class="debug-header" @click="toggleDebug">
+        <i class="fas fa-bug"></i> デバッグ情報
+        <span class="toggle-icon">{{ showDebug ? '▼' : '▶' }}</span>
+      </div>
+      <div v-if="showDebug" class="debug-content">
+        <div class="debug-section">
+          <h4>ルート情報</h4>
+          <div class="debug-item">
+            <strong>Raw URL:</strong>
+            <pre>{{ window.location.href }}</pre>
+          </div>
+          <div class="debug-item">
+            <strong>Raw Path:</strong>
+            <pre>{{ window.location.pathname }}</pre>
+          </div>
+          <div class="debug-item">
+            <strong>Raw Query:</strong>
+            <pre>{{ window.location.search }}</pre>
+          </div>
+          <div class="debug-item">
+            <strong>Route Path:</strong>
+            <pre>{{ $route.path }}</pre>
+          </div>
+          <div class="debug-item">
+            <strong>Route Full Path:</strong>
+            <pre>{{ $route.fullPath }}</pre>
+          </div>
+          <div class="debug-item">
+            <strong>Route Name:</strong>
+            <pre>{{ $route.name }}</pre>
+          </div>
+        </div>
+
+        <div class="debug-section">
+          <h4>パラメータ</h4>
+          <div class="debug-item">
+            <strong>Route Params:</strong>
+            <pre>{{ JSON.stringify($route.params, null, 2) }}</pre>
+          </div>
+          <div class="debug-item">
+            <strong>Query Params:</strong>
+            <pre>{{ JSON.stringify($route.query, null, 2) }}</pre>
+          </div>
+          <div class="debug-item">
+            <strong>Hash:</strong>
+            <pre>{{ $route.hash }}</pre>
+          </div>
+        </div>
+
+        <div class="debug-section">
+          <h4>データ状態</h4>
+          <div class="debug-item">
+            <strong>Document ID:</strong>
+            <pre>{{ $route.params.documentId }}</pre>
+          </div>
+          <div class="debug-item">
+            <strong>Tweet ID:</strong>
+            <pre>{{ $route.params.tweetId }}</pre>
+          </div>
+          <div class="debug-item">
+            <strong>Document Data:</strong>
+            <pre>{{ JSON.stringify(document, null, 2) }}</pre>
+          </div>
+          <div class="debug-item">
+            <strong>Tweet Data:</strong>
+            <pre>{{ JSON.stringify(tweet, null, 2) }}</pre>
+          </div>
+          <div class="debug-item">
+            <strong>Back URL:</strong>
+            <pre>{{ backUrl }}</pre>
+          </div>
+          <div class="debug-item">
+            <strong>Current URL:</strong>
+            <pre>{{ currentUrl }}</pre>
+          </div>
+        </div>
+
+        <div class="debug-section">
+          <h4>LocalStorage</h4>
+          <div class="debug-item">
+            <strong>Stored Documents:</strong>
+            <pre>{{ debugStoredDocuments }}</pre>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <div class="tweet" v-if="tweet">
-      <div class="tweet-header">
-        <span class="index">{{ tweet.index }}</span>
-        <span class="document-title">{{ document.displayName }}</span>
-      </div>
-      <p class="tweet-content" v-html="highlightedContent"></p>
-      
-      <div class="tweet-actions">
-        <button class="copy-url-btn" @click="copyUrl">
-          <i class="fas fa-link"></i> URLをコピー
-        </button>
-        <button v-if="document.revisions" class="add-revision-link-btn" @click="showRevisionSelector = true">
-          <i class="fas fa-history"></i> 改訂履歴を追加
-        </button>
+    <!-- メインコンテンツ -->
+    <div v-if="document" class="tweet-container">
+      <div class="tweet-profile-header">
+        <router-link :to="backUrl" class="tweet-back-link">←</router-link>
+        <h1>{{ document.displayName }}</h1>
       </div>
 
-      <!-- 関連リンク -->
-      <div v-if="tweet.links && tweet.links.length > 0" class="tweet-links">
-        <h3>関連リンク:</h3>
-        <tweet-links :links="tweet.links" :base-url="currentUrl" />
-      </div>
+      <div v-if="tweet" class="tweet">
+        <div class="tweet-header">
+          <span class="index">{{ tweet.index }}</span>
+          <span class="document-title">{{ document.displayName }}</span>
+        </div>
+        <p class="tweet-content" v-html="highlightedContent"></p>
+        
+        <div class="tweet-actions">
+          <button class="copy-url-btn" @click="copyUrl">
+            <i class="fas fa-link"></i> URLをコピー
+          </button>
+          <button v-if="document.revisions" class="add-revision-link-btn" @click="showRevisionSelector = true">
+            <i class="fas fa-history"></i> 改訂履歴を追加
+          </button>
+        </div>
 
-      <!-- 改訂履歴 -->
-      <div v-if="tweet.revision && tweet.revision.length > 0" class="revision-links">
-        <h3>改訂履歴:</h3>
-        <div v-for="revision in tweet.revision" :key="revision" class="revision-item">
-          <div class="revision-content">
-            <div v-if="getRevisionContent(revision)" class="revision-details">
-              <h4>{{ getRevisionContent(revision).title }}</h4>
-              <div v-if="getRevisionContent(revision).description" class="revision-description">
-                {{ getRevisionContent(revision).description }}
-              </div>
-              <div v-if="getRevisionContent(revision).sourceUrl" class="revision-source">
-                <a :href="getRevisionContent(revision).sourceUrl" target="_blank" rel="noopener noreferrer">
-                  参考リンク
-                </a>
-              </div>
-              <div v-for="article in getRevisionArticles(revision)" :key="article.id" class="article-container">
-                <div class="article-status" :class="article.status">{{ article.status }}</div>
-                <div class="comparison-container">
-                  <div class="comparison-column before">
-                    <h4>改正前</h4>
-                    <div v-if="article.before" class="content">{{ article.before }}</div>
-                    <div v-else class="no-content">改正前の内容なし</div>
-                  </div>
-                  <div class="comparison-column after">
-                    <h4>改正後</h4>
-                    <div v-if="article.after" class="content" v-html="highlightChanges(article.before, article.after)"></div>
-                    <div v-else class="no-content">改正後の内容なし</div>
+        <!-- 関連リンク -->
+        <div v-if="tweet.links && tweet.links.length > 0" class="tweet-links">
+          <h3>関連リンク:</h3>
+          <tweet-links :links="tweet.links" :base-url="currentUrl" />
+        </div>
+
+        <!-- 改訂履歴 -->
+        <div v-if="tweet.revision && tweet.revision.length > 0" class="revision-links">
+          <h3>改訂履歴:</h3>
+          <div v-for="revision in tweet.revision" :key="revision" class="revision-item">
+            <div class="revision-content">
+              <div v-if="getRevisionContent(revision)" class="revision-details">
+                <h4>{{ getRevisionContent(revision).title }}</h4>
+                <div v-if="getRevisionContent(revision).description" class="revision-description">
+                  {{ getRevisionContent(revision).description }}
+                </div>
+                <div v-if="getRevisionContent(revision).sourceUrl" class="revision-source">
+                  <a :href="getRevisionContent(revision).sourceUrl" target="_blank" rel="noopener noreferrer">
+                    参考リンク
+                  </a>
+                </div>
+                <div v-for="article in getRevisionArticles(revision)" :key="article.id" class="article-container">
+                  <div class="article-status" :class="article.status">{{ article.status }}</div>
+                  <div class="comparison-container">
+                    <div class="comparison-column before">
+                      <h4>改正前</h4>
+                      <div v-if="article.before" class="content">{{ article.before }}</div>
+                      <div v-else class="no-content">改正前の内容なし</div>
+                    </div>
+                    <div class="comparison-column after">
+                      <h4>改正後</h4>
+                      <div v-if="article.after" class="content" v-html="highlightChanges(article.before, article.after)"></div>
+                      <div v-else class="no-content">改正後の内容なし</div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -61,50 +153,56 @@
           </div>
         </div>
       </div>
+      <div v-else class="error-message">
+        指定されたツイートが見つかりません。
+      </div>
+    </div>
+    <div v-else class="error-message">
+      指定された文書が見つかりません。
+    </div>
 
-      <!-- 改訂選択モーダル -->
-      <div v-if="showRevisionSelector" class="modal-overlay" @click="showRevisionSelector = false">
-        <div class="modal-content" @click.stop>
-          <div class="modal-header">
-            <h2>改訂履歴の選択</h2>
-            <button class="close-button" @click="showRevisionSelector = false">&times;</button>
-          </div>
-          <div class="modal-body">
-            <div v-for="revision in document.revisions" :key="revision.id" class="revision-selector-item">
-              <h3>{{ revision.title }} ({{ formatDate(revision.date) }})</h3>
-              <div v-if="revision.description" class="revision-description">
-                {{ revision.description }}
-              </div>
-              <div class="articles-list">
-                <div v-for="article in revision.articles" :key="article.id" class="article-selector">
-                  <label class="article-checkbox">
-                    <input 
-                      type="checkbox" 
-                      :value="`${document.accountId}/revisions/${revision.id}/${article.id}`"
-                      v-model="selectedRevisions"
-                    >
-                    <div class="article-preview">
-                      <div class="article-status" :class="article.status">{{ article.status }}</div>
-                      <div class="article-content">
-                        <div v-if="article.before" class="before-preview">
-                          改正前: {{ truncateText(article.before) }}
-                        </div>
-                        <div v-if="article.after" class="after-preview">
-                          改正後: {{ truncateText(article.after) }}
-                        </div>
+    <!-- 改訂選択モーダル -->
+    <div v-if="showRevisionSelector" class="modal-overlay" @click="showRevisionSelector = false">
+      <div class="modal-content" @click.stop>
+        <div class="modal-header">
+          <h2>改訂履歴の選択</h2>
+          <button class="close-button" @click="showRevisionSelector = false">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div v-for="revision in document.revisions" :key="revision.id" class="revision-selector-item">
+            <h3>{{ revision.title }} ({{ formatDate(revision.date) }})</h3>
+            <div v-if="revision.description" class="revision-description">
+              {{ revision.description }}
+            </div>
+            <div class="articles-list">
+              <div v-for="article in revision.articles" :key="article.id" class="article-selector">
+                <label class="article-checkbox">
+                  <input 
+                    type="checkbox" 
+                    :value="`${document.accountId}/revisions/${revision.id}/${article.id}`"
+                    v-model="selectedRevisions"
+                  >
+                  <div class="article-preview">
+                    <div class="article-status" :class="article.status">{{ article.status }}</div>
+                    <div class="article-content">
+                      <div v-if="article.before" class="before-preview">
+                        改正前: {{ truncateText(article.before) }}
+                      </div>
+                      <div v-if="article.after" class="after-preview">
+                        改正後: {{ truncateText(article.after) }}
                       </div>
                     </div>
-                  </label>
-                </div>
+                  </div>
+                </label>
               </div>
             </div>
           </div>
-          <div class="modal-footer">
-            <button class="cancel-button" @click="showRevisionSelector = false">キャンセル</button>
-            <button class="save-button" @click="saveRevisionLinks" :disabled="selectedRevisions.length === 0">
-              選択した改訂を追加
-            </button>
-          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="cancel-button" @click="showRevisionSelector = false">キャンセル</button>
+          <button class="save-button" @click="saveRevisionLinks" :disabled="selectedRevisions.length === 0">
+            選択した改訂を追加
+          </button>
         </div>
       </div>
     </div>
@@ -112,7 +210,7 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import TweetLinks from './TweetLinks.vue'
 import { diffChars } from 'diff'
@@ -129,11 +227,21 @@ export default {
     const router = useRouter()
     const document = ref(null)
     const tweet = ref(null)
+    const showDebug = ref(false)
     const showRevisionSelector = ref(false)
     const selectedRevisions = ref([])
 
     const currentUrl = computed(() => `/document/${route.params.documentId}/${route.params.tweetId}`)
     const backUrl = computed(() => route.query.back || `/document/${route.params.documentId}`)
+
+    const debugStoredDocuments = computed(() => {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY)
+        return JSON.stringify(JSON.parse(stored), null, 2)
+      } catch (e) {
+        return `Error parsing stored documents: ${e.message}`
+      }
+    })
 
     const highlightedContent = computed(() => {
       if (!tweet.value?.content) return ''
@@ -148,21 +256,10 @@ export default {
       return content
     })
 
-    const highlightChanges = (before, after) => {
-      if (!before) return after
-
-      const diff = diffChars(before, after)
-      let result = ''
-      
-      diff.forEach(part => {
-        if (part.added) {
-          result += `<span class="diff-added">${part.value}</span>`
-        } else if (!part.removed) {
-          result += part.value
-        }
-      })
-      
-      return result
+    const toggleDebug = () => {
+      showDebug.value = !showDebug.value
+      console.log('Current route:', route)
+      console.log('Window location:', window.location)
     }
 
     const getPathParts = (path) => {
@@ -219,6 +316,23 @@ export default {
       })
     }
 
+    const highlightChanges = (before, after) => {
+      if (!before) return after
+
+      const diff = diffChars(before, after)
+      let result = ''
+      
+      diff.forEach(part => {
+        if (part.added) {
+          result += `<span class="diff-added">${part.value}</span>`
+        } else if (!part.removed) {
+          result += part.value
+        }
+      })
+      
+      return result
+    }
+
     const saveRevisionLinks = () => {
       const storedData = localStorage.getItem(STORAGE_KEY)
       if (storedData) {
@@ -243,8 +357,8 @@ export default {
       }
     }
 
-    // Load document data from localStorage
     const loadData = () => {
+      console.log('Loading data for:', route.params)
       const storedData = localStorage.getItem(STORAGE_KEY)
       if (storedData) {
         try {
@@ -256,13 +370,22 @@ export default {
               selectedRevisions.value = tweet.value.revision
             }
           }
+          console.log('Loaded document:', document.value)
+          console.log('Loaded tweet:', tweet.value)
         } catch (e) {
           console.error('Failed to load documents:', e)
         }
       }
     }
 
-    loadData()
+    // ルートパラメータが変更されたときにデータを再読み込み
+    watch(() => route.params, (newParams, oldParams) => {
+      console.log('Route params changed:', {
+        new: newParams,
+        old: oldParams
+      })
+      loadData()
+    }, { immediate: true })
 
     return {
       document,
@@ -270,22 +393,63 @@ export default {
       currentUrl,
       backUrl,
       highlightedContent,
-      highlightChanges,
-      getPathParts,
-      getRevisionContent,
-      getRevisionArticles,
       showRevisionSelector,
       selectedRevisions,
+      showDebug,
+      toggleDebug,
+      debugStoredDocuments,
+      getRevisionContent,
+      getRevisionArticles,
       formatDate,
       truncateText,
       copyUrl,
-      saveRevisionLinks
+      saveRevisionLinks,
+      highlightChanges,
+      window: computed(() => window)
     }
   }
 }
 </script>
 
 <style>
+.tweet-page {
+  min-height: 100vh;
+  background-color: #f7f9fa;
+  padding: 20px;
+}
+
+.debug-panel {
+  background: white;
+  border: 1px solid #e1e8ed;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.debug-header {
+  padding: 12px;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e1e8ed;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: bold;
+  color: #1da1f2;
+}
+
+.debug-content {
+  padding: 16px;
+}
+
+.error-message {
+  text-align: center;
+  padding: 40px;
+  background: white;
+  border-radius: 8px;
+  color: #e0245e;
+  font-weight: bold;
+}
+
 .tweet-container {
   background-color: #ffffff;
   border-radius: 12px;
