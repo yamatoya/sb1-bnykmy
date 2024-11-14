@@ -23,11 +23,36 @@
           <i class="fas fa-external-link-alt"></i> ソースを表示
         </a>
       </div>
+
+      <div v-if="revision.publicCommentLinks && revision.publicCommentLinks.length > 0" class="public-comments">
+        <h3>関連するパブリックコメント</h3>
+        <div v-for="commentId in revision.publicCommentLinks" :key="commentId" class="comment-item">
+          <div v-if="getPublicComment(commentId)" class="comment-content">
+            <div class="comment-header">
+              <span class="comment-index">{{ getPublicComment(commentId).index }}</span>
+              <router-link 
+                :to="`/document/${$route.params.id}/${commentId}?type=public_comment&back=${$route.fullPath}`"
+                class="view-link"
+              >
+                詳細を表示
+              </router-link>
+            </div>
+            <div class="comment-text">
+              <div class="question">
+                <strong>質問:</strong> {{ getPublicComment(commentId).question }}
+              </div>
+              <div class="answer">
+                <strong>回答:</strong> {{ getPublicComment(commentId).answer }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
       
       <div v-for="article in revision.articles" :key="article.id" class="article-container">
         <div class="article-status" :class="article.status">{{ article.status }}</div>
         <div class="comparison-container">
-          <div class="comparison-column before">
+          <div class="comparison-column before" v-if="article.status !== '新設'">
             <h3>改正前</h3>
             <div v-if="article.before" class="content" v-html="article.before"></div>
             <div v-else class="no-content">改正前の内容なし</div>
@@ -75,13 +100,11 @@ export default {
       selectedRevision.value = route.query.revision || ''
     })
 
-    // URL パラメータが変更されたときに選択を更新
     watch(() => route.query.revision, (newRevision) => {
       selectedRevision.value = newRevision || ''
     })
 
     const onRevisionChange = () => {
-      // 選択が変更されたときに URL を更新
       router.replace({
         query: {
           ...route.query,
@@ -93,7 +116,7 @@ export default {
     const filteredRevisions = computed(() => {
       if (!document.value?.revisions) return []
       if (!selectedRevision.value) {
-        return document.value.revisions
+        return [...document.value.revisions].sort((a, b) => new Date(b.date) - new Date(a.date))
       }
       return document.value.revisions.filter(rev => rev.id === selectedRevision.value)
     })
@@ -106,38 +129,26 @@ export default {
       })
     }
 
+    const getPublicComment = (commentId) => {
+      if (!document.value?.questions) return null
+      return document.value.questions.find(q => q.id === commentId)
+    }
+
     const highlightChanges = (before, after) => {
-      if (!before) return after // 新設の場合は下線なしで表示
+      if (!before) return after
 
-      // HTMLタグを一時的にプレースホルダーに置き換え
-      const tags = []
-      const processedBefore = before.replace(/<[^>]+>/g, match => {
-        tags.push(match)
-        return `___TAG${tags.length - 1}___`
-      })
-      const processedAfter = after.replace(/<[^>]+>/g, match => {
-        const index = tags.indexOf(match)
-        if (index === -1) {
-          tags.push(match)
-        }
-        return `___TAG${tags.indexOf(match)}___`
-      })
-
-      // 差分を計算
-      const diff = diffChars(processedBefore, processedAfter)
-      
-      // 差分をマークアップ
+      const diff = diffChars(before, after)
       let result = ''
+      
       diff.forEach(part => {
-        if (!part.added && !part.removed) {
-          result += part.value
-        } else if (part.added) {
+        if (part.added) {
           result += `<span class="diff-added">${part.value}</span>`
+        } else if (!part.removed) {
+          result += part.value
         }
       })
-
-      // HTMLタグを復元
-      return result.replace(/___TAG(\d+)___/g, (_, i) => tags[i])
+      
+      return result
     }
 
     return {
@@ -146,14 +157,14 @@ export default {
       filteredRevisions,
       formatDate,
       highlightChanges,
-      onRevisionChange
+      onRevisionChange,
+      getPublicComment
     }
   }
 }
 </script>
 
-<style>
-/* スタイルは変更なし */
+<style scoped>
 .profile-header {
   background-color: #f0f0f0;
   padding: 20px;
@@ -228,6 +239,83 @@ h1 {
 
 .source-link:hover {
   text-decoration: underline;
+}
+
+.public-comments {
+  margin: 20px;
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e1e8ed;
+}
+
+.public-comments h3 {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  color: #14171a;
+}
+
+.comment-item {
+  background: white;
+  border: 1px solid #e1e8ed;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.comment-item:last-child {
+  margin-bottom: 0;
+}
+
+.comment-content {
+  padding: 16px;
+}
+
+.comment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.comment-index {
+  display: inline-block;
+  padding: 4px 8px;
+  background-color: #e8f5fd;
+  color: #1da1f2;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.view-link {
+  color: #1da1f2;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.view-link:hover {
+  text-decoration: underline;
+}
+
+.comment-text {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.question,
+.answer {
+  margin-bottom: 8px;
+}
+
+.question:last-child,
+.answer:last-child {
+  margin-bottom: 0;
+}
+
+.question strong,
+.answer strong {
+  color: #657786;
 }
 
 .article-container {
@@ -326,6 +414,21 @@ h1 {
   .revision-select {
     width: 100%;
     max-width: 300px;
+  }
+
+  .public-comments {
+    margin: 15px;
+    padding: 15px;
+  }
+
+  .comment-content {
+    padding: 12px;
+  }
+
+  .comment-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
   }
 }
 </style>

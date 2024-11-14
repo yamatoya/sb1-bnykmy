@@ -1,5 +1,70 @@
 <template>
   <div class="editor-page">
+    <!-- デバッグ情報パネル -->
+    <div class="debug-panel">
+      <div class="debug-header" @click="toggleDebug">
+        <i class="fas fa-bug"></i> デバッグ情報
+        <span class="toggle-icon">{{ showDebug ? '▼' : '▶' }}</span>
+      </div>
+      <div v-if="showDebug" class="debug-content">
+        <div class="debug-section">
+          <h4>基本情報</h4>
+          <div class="debug-item">
+            <strong>Document ID:</strong> {{ documentId }}
+          </div>
+          <div class="debug-item">
+            <strong>Revision ID:</strong> {{ revisionId }}
+          </div>
+          <div class="debug-item">
+            <strong>Is New Revision:</strong> {{ isNew }}
+          </div>
+        </div>
+
+        <div class="debug-section">
+          <h4>パブリックコメント検索情報</h4>
+          <div class="debug-item">
+            <strong>検索条件:</strong>
+            <pre>
+1. ドキュメントの存在確認
+   - Documents loaded: {{ !!documents }}
+   - Total documents: {{ Object.keys(documents || {}).length }}
+
+2. パブリックコメントの検索
+   - Documents with public comments: {{ documentsWithPublicComments.length }}
+   - Available public comment documents: {{ availablePublicComments.length }}
+
+3. 選択状態
+   - Selected documents: {{ selectedPublicComments.length }}
+   - Selection IDs: {{ JSON.stringify(selectedPublicComments) }}
+            </pre>
+          </div>
+          <div class="debug-item">
+            <strong>パブリックコメントを含むドキュメント:</strong>
+            <pre>{{ documentsWithPublicComments.map(doc => ({
+              id: doc.id,
+              name: doc.displayName,
+              hasPublicComment: doc.public_comment
+            })) }}</pre>
+          </div>
+        </div>
+
+        <div class="debug-section">
+          <h4>現在の改訂データ</h4>
+          <div class="debug-item">
+            <pre>{{ JSON.stringify({
+              id: revisionId,
+              title: title,
+              date: date,
+              description: description,
+              sourceUrl: sourceUrl,
+              articlesCount: articles.length,
+              publicCommentLinks: selectedPublicComments
+            }, null, 2) }}</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <header class="page-header">
       <router-link :to="backLink" class="back-link">
         <i class="fas fa-arrow-left"></i>
@@ -49,6 +114,38 @@
             class="form-control" 
             placeholder="https://..."
           />
+        </div>
+
+        <div class="public-comments-section">
+          <h2>関連するパブリックコメント</h2>
+          <div v-if="availablePublicComments.length === 0" class="no-comments">
+            利用可能なパブリックコメントがありません
+          </div>
+          <div v-else class="comments-list">
+            <div v-for="doc in availablePublicComments" :key="doc.id" class="comment-item">
+              <label class="comment-checkbox">
+                <input 
+                  type="checkbox" 
+                  :value="doc.id"
+                  v-model="selectedPublicComments"
+                >
+                <div class="comment-preview">
+                  <div class="comment-header">
+                    <span class="document-name">{{ doc.displayName }}</span>
+                    <a 
+                      :href="`/document/${doc.id}`" 
+                      target="_blank" 
+                      class="view-link"
+                      @click.prevent="openDocument(doc.id)"
+                    >
+                      <i class="fas fa-external-link-alt"></i>
+                      表示
+                    </a>
+                  </div>
+                </div>
+              </label>
+            </div>
+          </div>
         </div>
 
         <div class="articles-section">
@@ -132,12 +229,39 @@ export default {
     const description = ref('')
     const sourceUrl = ref('')
     const articles = ref([])
+    const selectedPublicComments = ref([])
+    const showDebug = ref(false)
 
     const documentId = computed(() => route.params.documentId)
     const revisionId = computed(() => route.params.revisionId)
     const isNew = computed(() => route.params.action === 'new')
-    
     const backLink = computed(() => `/revisions/${documentId.value}`)
+
+    const documentsWithPublicComments = computed(() => {
+      if (!documents.value) return []
+      return Object.entries(documents.value)
+        .filter(([_, doc]) => doc.public_comment)
+        .map(([id, doc]) => ({ id, ...doc }))
+    })
+
+    const availablePublicComments = computed(() => {
+      return documentsWithPublicComments.value.map(doc => ({
+        id: doc.id,
+        displayName: doc.displayName,
+        selected: selectedPublicComments.value.includes(doc.id)
+      }))
+    })
+
+    const isValid = computed(() => {
+      return title.value &&
+             date.value &&
+             articles.value.length > 0 &&
+             articles.value.every(article => {
+               if (article.status === '新設') return !!article.after
+               if (article.status === '削除') return !!article.before
+               return article.before && article.after
+             })
+    })
 
     const loadDocuments = () => {
       const storedData = localStorage.getItem(STORAGE_KEY)
@@ -166,24 +290,10 @@ export default {
             ...article,
             id: article.id || uuidv4()
           }))
+          selectedPublicComments.value = revision.publicCommentLinks || []
         }
       }
     }
-
-    onMounted(() => {
-      loadDocuments()
-    })
-
-    const isValid = computed(() => {
-      return title.value &&
-             date.value &&
-             articles.value.length > 0 &&
-             articles.value.every(article => {
-               if (article.status === '新設') return !!article.after
-               if (article.status === '削除') return !!article.before
-               return article.before && article.after
-             })
-    })
 
     const addArticle = () => {
       articles.value.push({
@@ -198,6 +308,14 @@ export default {
       articles.value.splice(index, 1)
     }
 
+    const toggleDebug = () => {
+      showDebug.value = !showDebug.value
+    }
+
+    const openDocument = (docId) => {
+      router.push(`/document/${docId}`)
+    }
+
     const saveRevision = async () => {
       const revision = {
         id: revisionId.value || uuidv4(),
@@ -205,7 +323,8 @@ export default {
         date: date.value,
         description: description.value,
         sourceUrl: sourceUrl.value,
-        articles: articles.value
+        articles: articles.value,
+        publicCommentLinks: selectedPublicComments.value
       }
 
       const updatedDocuments = { ...documents.value }
@@ -231,6 +350,10 @@ export default {
       }
     }
 
+    onMounted(() => {
+      loadDocuments()
+    })
+
     return {
       isNew,
       backLink,
@@ -239,10 +362,19 @@ export default {
       description,
       sourceUrl,
       articles,
+      selectedPublicComments,
+      availablePublicComments,
+      documents,
+      documentsWithPublicComments,
+      documentId,
+      revisionId,
       isValid,
+      showDebug,
       addArticle,
       removeArticle,
-      saveRevision
+      saveRevision,
+      toggleDebug,
+      openDocument
     }
   }
 }
@@ -324,6 +456,135 @@ h1 {
 textarea.form-control {
   resize: vertical;
   min-height: 100px;
+}
+
+.debug-panel {
+  background: white;
+  border: 1px solid #e1e8ed;
+  border-radius: 8px;
+  margin: 20px;
+}
+
+.debug-header {
+  padding: 12px;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e1e8ed;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: bold;
+  color: #1da1f2;
+}
+
+.debug-content {
+  padding: 16px;
+}
+
+.debug-section {
+  margin-bottom: 20px;
+}
+
+.debug-section h4 {
+  margin: 0 0 12px 0;
+  color: #14171a;
+}
+
+.debug-item {
+  margin-bottom: 8px;
+  font-family: monospace;
+}
+
+.debug-item strong {
+  color: #657786;
+}
+
+.debug-item pre {
+  margin: 8px 0;
+  padding: 8px;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.toggle-icon {
+  margin-left: auto;
+}
+
+.public-comments-section {
+  margin-top: 40px;
+  margin-bottom: 40px;
+}
+
+.public-comments-section h2 {
+  margin-bottom: 20px;
+  font-size: 20px;
+  color: #14171a;
+}
+
+.no-comments {
+  text-align: center;
+  padding: 40px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  color: #657786;
+  font-style: italic;
+}
+
+.comments-list {
+  display: grid;
+  gap: 16px;
+}
+
+.comment-item {
+  background: white;
+  border: 1px solid #e1e8ed;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.comment-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  cursor: pointer;
+  width: 100%;
+}
+
+.comment-checkbox input {
+  margin-top: 4px;
+}
+
+.comment-preview {
+  flex-grow: 1;
+}
+
+.comment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.document-name {
+  font-size: 16px;
+  font-weight: bold;
+  color: #14171a;
+}
+
+.view-link {
+  color: #1da1f2;
+  text-decoration: none;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.view-link:hover {
+  text-decoration: underline;
 }
 
 .articles-section {
@@ -478,6 +739,31 @@ textarea.form-control {
   .save-button,
   .cancel-button {
     width: 100%;
+  }
+
+  .debug-panel {
+    margin: 12px;
+  }
+
+  .debug-content {
+    padding: 12px;
+  }
+
+  .debug-item pre {
+    font-size: 12px;
+  }
+
+  .comment-checkbox {
+    padding: 12px;
+  }
+
+  .comment-header {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .view-link {
+    align-self: flex-start;
   }
 }
 </style>
