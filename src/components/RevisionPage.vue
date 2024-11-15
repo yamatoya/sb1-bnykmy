@@ -1,43 +1,5 @@
 <template>
   <div class="revision-page">
-    <!-- デバッグ情報パネル -->
-    <div class="debug-panel">
-      <div class="debug-header" @click="toggleDebug">
-        <i class="fas fa-bug"></i> デバッグ情報
-        <span class="toggle-icon">{{ showDebug ? '▼' : '▶' }}</span>
-      </div>
-      <div v-if="showDebug" class="debug-content">
-        <div class="debug-section">
-          <h4>基本情報</h4>
-          <div class="debug-item">
-            <strong>Document ID:</strong> {{ documentId }}
-          </div>
-          <div class="debug-item">
-            <strong>Current Document:</strong> {{ currentDocument?.displayName }}
-          </div>
-        </div>
-
-        <div class="debug-section">
-          <h4>改訂情報</h4>
-          <div class="debug-item">
-            <strong>改訂数:</strong> {{ sortedRevisions.length }}
-          </div>
-          <div class="debug-item">
-            <strong>パブリックコメントリンク:</strong>
-            <pre>{{ JSON.stringify(publicCommentLinks, null, 2) }}</pre>
-          </div>
-        </div>
-
-        <div class="debug-section">
-          <h4>パブリックコメント情報</h4>
-          <div class="debug-item">
-            <strong>リンクされたパブリックコメント:</strong>
-            <pre>{{ JSON.stringify(linkedPublicComments, null, 2) }}</pre>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <header class="page-header">
       <router-link :to="backLink" class="back-link">
         <i class="fas fa-arrow-left"></i>
@@ -47,16 +9,6 @@
     </header>
 
     <main class="page-content">
-      <div v-if="!documentId" class="form-group">
-        <label>対象文書</label>
-        <select v-model="selectedDocument" class="form-control" @change="loadRevisions">
-          <option value="">文書を選択してください</option>
-          <option v-for="(doc, id) in documents" :key="id" :value="id">
-            {{ doc.displayName }}
-          </option>
-        </select>
-      </div>
-
       <div v-if="currentDocument" class="revisions-list">
         <div class="revisions-header">
           <h2>改訂一覧</h2>
@@ -74,6 +26,13 @@
           <div class="revision-header">
             <h3>{{ revision.title }}</h3>
             <div class="revision-actions">
+              <router-link 
+                :to="`/revisions/${documentId}/${revision.id}`"
+                class="view-button"
+              >
+                <i class="fas fa-eye"></i>
+                表示
+              </router-link>
               <button class="edit-button" @click="editRevision(revision)">
                 <i class="fas fa-pencil-alt"></i>
                 編集
@@ -119,18 +78,21 @@
               <div class="comparison-container">
                 <div class="comparison-column before">
                   <h4>改正前</h4>
-                  <div v-if="article.before" class="content" v-html="article.before"></div>
+                  <div v-if="article.before" class="content">{{ article.before }}</div>
                   <div v-else class="no-content">改正前の内容なし</div>
                 </div>
-                <div v-if="article.status !== '削除'" class="comparison-column after">
+                <div class="comparison-column after">
                   <h4>改正後</h4>
-                  <div v-if="article.after" class="content" v-html="article.after"></div>
+                  <div v-if="article.after" class="content">{{ article.after }}</div>
                   <div v-else class="no-content">改正後の内容なし</div>
                 </div>
               </div>
             </div>
           </div>
         </div>
+      </div>
+      <div v-else class="no-revisions">
+        指定された文書が見つかりません
       </div>
     </main>
   </div>
@@ -148,18 +110,17 @@ export default {
     const route = useRoute()
     const router = useRouter()
     const documents = ref(null)
-    const selectedDocument = ref('')
-    const showDebug = ref(false)
 
     const documentId = computed(() => route.params.documentId)
+    const revisionId = computed(() => route.params.revisionId)
     
     const backLink = computed(() => {
-      return documentId.value ? `/document/${documentId.value}` : '/'
+      return `/document/${documentId.value}`
     })
 
     const pageTitle = computed(() => {
-      if (!currentDocument.value) return '改訂履歴の編集'
-      return `${currentDocument.value.displayName} - 改訂履歴`
+      if (!currentDocument.value) return '改訂履歴'
+      return `${formatDisplayName(currentDocument.value.displayName)} - 改訂履歴`
     })
 
     const currentDocument = computed(() => {
@@ -174,34 +135,16 @@ export default {
       })
     })
 
-    const publicCommentLinks = computed(() => {
-      return sortedRevisions.value.reduce((acc, revision) => {
-        if (revision.publicCommentLinks) {
-          acc[revision.id] = revision.publicCommentLinks
-        }
-        return acc
-      }, {})
-    })
-
-    const linkedPublicComments = computed(() => {
-      const links = new Set()
-      sortedRevisions.value.forEach(revision => {
-        if (revision.publicCommentLinks) {
-          revision.publicCommentLinks.forEach(id => links.add(id))
-        }
-      })
-      return Array.from(links).map(id => {
-        const doc = documents.value[id]
-        return doc ? {
-          id,
-          displayName: doc.displayName,
-          hasPublicComment: !!doc.public_comment
-        } : null
-      }).filter(Boolean)
-    })
-
     const formatDisplayName = (name) => {
-      return name.replace(/<br>/gi, '')
+      return name?.replace(/<br>/gi, '') || ''
+    }
+
+    const formatDate = (dateString) => {
+      return new Date(dateString).toLocaleDateString('ja-JP', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      })
     }
 
     const loadDocuments = () => {
@@ -213,20 +156,6 @@ export default {
           console.error('Failed to parse stored documents:', e)
         }
       }
-    }
-
-    const loadRevisions = () => {
-      if (selectedDocument.value) {
-        router.replace(`/revisions/${selectedDocument.value}`)
-      }
-    }
-
-    const formatDate = (dateString) => {
-      return new Date(dateString).toLocaleDateString('ja-JP', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit'
-      })
     }
 
     const addNewRevision = () => {
@@ -260,33 +189,23 @@ export default {
         .filter(doc => doc && doc.public_comment)
     }
 
-    const toggleDebug = () => {
-      showDebug.value = !showDebug.value
-    }
-
     onMounted(() => {
       loadDocuments()
     })
 
     return {
       documentId,
-      documents,
-      selectedDocument,
+      revisionId,
       currentDocument,
       sortedRevisions,
       backLink,
       pageTitle,
-      loadRevisions,
+      formatDisplayName,
       formatDate,
       addNewRevision,
       editRevision,
       deleteRevision,
-      getPublicComments,
-      publicCommentLinks,
-      linkedPublicComments,
-      showDebug,
-      toggleDebug,
-      formatDisplayName
+      getPublicComments
     }
   }
 }
@@ -330,32 +249,6 @@ h1 {
   max-width: 1200px;
   margin: 0 auto;
   padding: 40px 20px;
-}
-
-.form-group {
-  margin-bottom: 30px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: bold;
-  color: #14171a;
-}
-
-.form-control {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid #e1e8ed;
-  border-radius: 8px;
-  font-size: 16px;
-  background-color: #ffffff;
-}
-
-.form-control:focus {
-  outline: none;
-  border-color: #1da1f2;
-  box-shadow: 0 0 0 2px rgba(29, 161, 242, 0.1);
 }
 
 .revisions-header {
@@ -426,6 +319,7 @@ h1 {
   gap: 12px;
 }
 
+.view-button,
 .edit-button,
 .delete-button {
   display: flex;
@@ -437,24 +331,34 @@ h1 {
   font-size: 14px;
   cursor: pointer;
   transition: all 0.2s ease;
+  text-decoration: none;
 }
 
-.edit-button {
+.view-button {
   background-color: #e8f5fd;
   color: #1da1f2;
 }
 
-.edit-button:hover {
+.view-button:hover {
   background-color: #d8effd;
 }
 
+.edit-button {
+  background-color: #f3f4f6;
+  color: #4b5563;
+}
+
+.edit-button:hover {
+  background-color: #e5e7eb;
+}
+
 .delete-button {
-  background-color: #ffefef;
-  color: #e0245e;
+  background-color: #fee2e2;
+  color: #ef4444;
 }
 
 .delete-button:hover {
-  background-color: #ffe7e7;
+  background-color: #fecaca;
 }
 
 .revision-info {
@@ -475,7 +379,7 @@ h1 {
 .label {
   font-weight: bold;
   color: #657786;
-  min-width: 80px;
+  min-width: 120px;
 }
 
 .info-row a {
@@ -489,6 +393,7 @@ h1 {
 
 .public-comments-list {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
@@ -535,13 +440,13 @@ h1 {
 }
 
 .article-status.新設 {
-  background-color: #e6ffed;
-  color: #28a745;
+  background-color: #dcfce7;
+  color: #16a34a;
 }
 
 .article-status.削除 {
-  background-color: #ffeef0;
-  color: #e0245e;
+  background-color: #fee2e2;
+  color: #ef4444;
 }
 
 .comparison-container {
@@ -566,20 +471,33 @@ h1 {
   white-space: pre-wrap;
   word-break: break-word;
   line-height: 1.6;
+  font-size: 14px;
 }
 
 .no-content {
   color: #657786;
   font-style: italic;
+  padding: 12px;
+  background-color: #ffffff;
+  border-radius: 4px;
+  font-size: 14px;
 }
 
 @media (max-width: 768px) {
   .page-header {
     padding: 16px;
+    flex-wrap: wrap;
+  }
+
+  h1 {
+    font-size: 20px;
+    width: 100%;
+    order: -1;
+    margin-bottom: 12px;
   }
 
   .page-content {
-    padding: 20px;
+    padding: 20px 16px;
   }
 
   .revision-header {
@@ -594,6 +512,7 @@ h1 {
 
   .comparison-container {
     grid-template-columns: 1fr;
+    gap: 12px;
   }
 
   .info-row {
@@ -605,16 +524,13 @@ h1 {
     min-width: auto;
   }
 
-  .debug-panel {
-    margin: 12px;
+  .public-comments-list {
+    width: 100%;
   }
 
-  .debug-content {
-    padding: 12px;
-  }
-
-  .debug-item pre {
-    font-size: 12px;
+  .public-comment-link {
+    width: 100%;
+    justify-content: center;
   }
 }
 </style>

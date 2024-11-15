@@ -5,6 +5,7 @@ import Index from './components/Index.vue'
 import Document from './components/Document.vue'
 import Tweet from './components/Tweet.vue'
 import RevisionPage from './components/RevisionPage.vue'
+import RevisionDetail from './components/RevisionDetail.vue'
 import RevisionEditorPage from './components/RevisionEditorPage.vue'
 
 const router = createRouter({
@@ -13,10 +14,18 @@ const router = createRouter({
     { path: '/', component: Index },
     { path: '/document/:id', component: Document },
     { path: '/document/:documentId/:tweetId', component: Tweet, name: 'tweet' },
-    { path: '/revisions', component: RevisionPage, name: 'revisions' },
-    { path: '/revisions/:documentId', component: RevisionPage, name: 'document-revisions' },
     { 
-      path: '/revisions/:documentId/:action', 
+      path: '/revisions/:documentId', 
+      component: RevisionPage,
+      name: 'revisions'
+    },
+    { 
+      path: '/revisions/:documentId/:revisionId', 
+      component: RevisionDetail,
+      name: 'revision-detail'
+    },
+    { 
+      path: '/revisions/:documentId/new', 
       component: RevisionEditorPage,
       name: 'revision-editor-new',
       props: true
