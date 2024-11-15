@@ -75,10 +75,6 @@
             <i class="fas fa-code"></i>
             <span>JSON差分を表示</span>
           </button>
-          <router-link to="/revisions" class="footer-button">
-            <i class="fas fa-edit"></i>
-            <span>改訂履歴を編集</span>
-          </router-link>
           <button class="footer-button warning" @click="resetToDefault">
             <i class="fas fa-sync-alt"></i>
             <span>データをリセット</span>
@@ -113,7 +109,6 @@ export default {
     const isSearchFocused = ref(false)
     const documents = ref(documentsData)
     const showingJsonDiffViewer = ref(false)
-    const searchQuery = ref('')
 
     onMounted(() => {
       const storedData = localStorage.getItem(STORAGE_KEY)
@@ -140,6 +135,15 @@ export default {
       }
     }
 
+    const searchQuery = computed({
+      get: () => route.query.q || '',
+      set: (value) => {
+        router.replace({
+          query: { ...route.query, q: value || undefined }
+        })
+      }
+    })
+
     watch(searchQuery, (newValue) => {
       router.replace({
         query: { ...route.query, q: newValue || undefined }
@@ -160,7 +164,7 @@ export default {
     })
 
     const formatDisplayName = (name) => {
-      return name.replace(/<br>/gi, '')
+      return name?.replace(/<br>/gi, '') || ''
     }
 
     const getSearchableContent = (doc) => {
@@ -194,9 +198,8 @@ export default {
     const getMatchLink = (match, docId) => {
       if (match.type.startsWith('改訂')) {
         return {
-          path: `/document/${docId}`,
+          path: `/revisions/${docId}/${match.revisionId}`,
           query: { 
-            revision: match.revisionId,
             highlight: match.content
           }
         }

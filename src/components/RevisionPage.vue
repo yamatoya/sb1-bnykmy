@@ -72,23 +72,6 @@
               </div>
             </div>
           </div>
-          <div class="articles-list">
-            <div v-for="article in revision.articles" :key="article.id" class="article-container">
-              <div class="article-status" :class="article.status">{{ article.status }}</div>
-              <div class="comparison-container">
-                <div class="comparison-column before">
-                  <h4>改正前</h4>
-                  <div v-if="article.before" class="content">{{ article.before }}</div>
-                  <div v-else class="no-content">改正前の内容なし</div>
-                </div>
-                <div class="comparison-column after">
-                  <h4>改正後</h4>
-                  <div v-if="article.after" class="content">{{ article.after }}</div>
-                  <div v-else class="no-content">改正後の内容なし</div>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
       <div v-else class="no-revisions">
@@ -114,14 +97,7 @@ export default {
     const documentId = computed(() => route.params.documentId)
     const revisionId = computed(() => route.params.revisionId)
     
-    const backLink = computed(() => {
-      return `/document/${documentId.value}`
-    })
-
-    const pageTitle = computed(() => {
-      if (!currentDocument.value) return '改訂履歴'
-      return `${formatDisplayName(currentDocument.value.displayName)} - 改訂履歴`
-    })
+    const backLink = computed(() => `/document/${documentId.value}`)
 
     const currentDocument = computed(() => {
       if (!documents.value || !documentId.value) return null
@@ -135,6 +111,11 @@ export default {
       })
     })
 
+    const pageTitle = computed(() => {
+      if (!currentDocument.value) return '改訂履歴'
+      return `${formatDisplayName(currentDocument.value.displayName)} - 改訂履歴`
+    })
+
     const formatDisplayName = (name) => {
       return name?.replace(/<br>/gi, '') || ''
     }
@@ -145,17 +126,6 @@ export default {
         month: '2-digit',
         day: '2-digit'
       })
-    }
-
-    const loadDocuments = () => {
-      const storedData = localStorage.getItem(STORAGE_KEY)
-      if (storedData) {
-        try {
-          documents.value = JSON.parse(storedData)
-        } catch (e) {
-          console.error('Failed to parse stored documents:', e)
-        }
-      }
     }
 
     const addNewRevision = () => {
@@ -190,7 +160,14 @@ export default {
     }
 
     onMounted(() => {
-      loadDocuments()
+      const storedData = localStorage.getItem(STORAGE_KEY)
+      if (storedData) {
+        try {
+          documents.value = JSON.parse(storedData)
+        } catch (e) {
+          console.error('Failed to parse stored documents:', e)
+        }
+      }
     })
 
     return {
@@ -363,7 +340,6 @@ h1 {
 
 .revision-info {
   padding: 16px;
-  border-bottom: 1px solid #e1e8ed;
 }
 
 .info-row {
@@ -413,76 +389,6 @@ h1 {
   background-color: #d8effd;
 }
 
-.articles-list {
-  padding: 16px;
-}
-
-.article-container {
-  margin-bottom: 24px;
-}
-
-.article-container:last-child {
-  margin-bottom: 0;
-}
-
-.article-status {
-  display: inline-block;
-  padding: 4px 12px;
-  border-radius: 16px;
-  font-size: 14px;
-  font-weight: bold;
-  margin-bottom: 12px;
-}
-
-.article-status.改正 {
-  background-color: #e8f5fd;
-  color: #1da1f2;
-}
-
-.article-status.新設 {
-  background-color: #dcfce7;
-  color: #16a34a;
-}
-
-.article-status.削除 {
-  background-color: #fee2e2;
-  color: #ef4444;
-}
-
-.comparison-container {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-}
-
-.comparison-column {
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  padding: 16px;
-}
-
-.comparison-column h4 {
-  margin: 0 0 12px 0;
-  font-size: 14px;
-  color: #657786;
-}
-
-.content {
-  white-space: pre-wrap;
-  word-break: break-word;
-  line-height: 1.6;
-  font-size: 14px;
-}
-
-.no-content {
-  color: #657786;
-  font-style: italic;
-  padding: 12px;
-  background-color: #ffffff;
-  border-radius: 4px;
-  font-size: 14px;
-}
-
 @media (max-width: 768px) {
   .page-header {
     padding: 16px;
@@ -508,11 +414,7 @@ h1 {
   .revision-actions {
     width: 100%;
     justify-content: flex-end;
-  }
-
-  .comparison-container {
-    grid-template-columns: 1fr;
-    gap: 12px;
+    gap: 8px;
   }
 
   .info-row {
