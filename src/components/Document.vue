@@ -64,15 +64,24 @@
         <template v-if="document.public_comment">
           <div class="qa-content">
             <div class="question">
-              <div class="qa-label">質問</div>
+              <div class="qa-label">
+                <i class="fas fa-question-circle"></i>
+                質問
+              </div>
               <p class="tweet-content" v-html="highlightContent(item.question)"></p>
             </div>
             <div class="answer">
-              <div class="qa-label">回答</div>
+              <div class="qa-label">
+                <i class="fas fa-comment-dots"></i>
+                回答
+              </div>
               <p class="tweet-content" v-html="highlightContent(item.answer)"></p>
             </div>
             <div class="meta-info">
-              <span v-if="item.links" class="link-count">関連リンク({{ item.links.length }})</span>
+              <span v-if="item.links" class="link-count">
+                <i class="fas fa-link"></i>
+                関連リンク({{ item.links.length }})
+              </span>
             </div>
           </div>
         </template>
@@ -103,47 +112,6 @@ export default {
     const router = useRouter()
     const document = ref(null)
     const isSearchFocused = ref(false)
-    const documents = ref(null)
-
-    onMounted(() => {
-      loadDocuments()
-    })
-
-    const loadDocuments = () => {
-      const storedData = localStorage.getItem(STORAGE_KEY)
-      if (storedData) {
-        try {
-          documents.value = JSON.parse(storedData)
-          document.value = documents.value[route.params.id]
-        } catch (e) {
-          console.error('Failed to parse stored documents:', e)
-        }
-      }
-    }
-
-    const linkedRevisions = computed(() => {
-      if (!documents.value || !document.value?.public_comment) return []
-
-      const revisions = []
-      Object.entries(documents.value).forEach(([docId, doc]) => {
-        if (doc.revisions) {
-          doc.revisions.forEach(revision => {
-            if (revision.publicCommentLinks?.includes(route.params.id)) {
-              revisions.push({
-                documentId: docId,
-                documentName: doc.displayName,
-                id: revision.id,
-                title: revision.title,
-                description: revision.description,
-                date: revision.date
-              })
-            }
-          })
-        }
-      })
-
-      return revisions.sort((a, b) => new Date(b.date) - new Date(a.date))
-    })
 
     const searchQuery = computed({
       get: () => route.query.q || '',
@@ -152,6 +120,27 @@ export default {
           query: { ...route.query, q: value || undefined }
         })
       }
+    })
+
+    const linkedRevisions = computed(() => {
+      if (!document.value?.public_comment) return []
+
+      const allRevisions = []
+      Object.entries(JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}')).forEach(([docId, doc]) => {
+        if (doc.revisions) {
+          doc.revisions.forEach(revision => {
+            if (revision.publicCommentLinks?.includes(route.params.id)) {
+              allRevisions.push({
+                documentId: docId,
+                documentName: doc.displayName,
+                ...revision
+              })
+            }
+          })
+        }
+      })
+
+      return allRevisions.sort((a, b) => new Date(b.date) - new Date(a.date))
     })
 
     const filteredItems = computed(() => {
@@ -186,7 +175,17 @@ export default {
 
     const highlightContent = (text) => {
       if (!text) return ''
-      return text.replace(/<br>/gi, '\n')
+      let content = text.replace(/<br>/gi, '\n')
+      
+      if (searchQuery.value) {
+        const searchTerms = searchQuery.value.toLowerCase().split(' ').filter(term => term.length > 0)
+        searchTerms.forEach(term => {
+          const regex = new RegExp(`(${term})`, 'gi')
+          content = content.replace(regex, '<span class="highlight">$1</span>')
+        })
+      }
+      
+      return content
     }
 
     const goToItem = (itemId) => {
@@ -196,12 +195,24 @@ export default {
       })
     }
 
+    onMounted(() => {
+      const storedData = localStorage.getItem(STORAGE_KEY)
+      if (storedData) {
+        try {
+          const documents = JSON.parse(storedData)
+          document.value = documents[route.params.id]
+        } catch (e) {
+          console.error('Failed to parse stored documents:', e)
+        }
+      }
+    })
+
     return {
       document,
       isSearchFocused,
       searchQuery,
-      filteredItems,
       linkedRevisions,
+      filteredItems,
       formatDisplayName,
       formatDate,
       highlightContent,
@@ -212,68 +223,6 @@ export default {
 </script>
 
 <style scoped>
-.linked-revisions {
-  background: white;
-  border: 1px solid #e1e8ed;
-  border-radius: 8px;
-  margin: 20px;
-  padding: 20px;
-}
-
-.linked-revisions h2 {
-  font-size: 18px;
-  color: #14171a;
-  margin: 0 0 16px 0;
-}
-
-.revision-links {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.revision-link-item {
-  display: block;
-  padding: 16px;
-  background-color: #f8f9fa;
-  border: 1px solid #e1e8ed;
-  border-radius: 8px;
-  text-decoration: none;
-  color: inherit;
-  transition: background-color 0.2s ease;
-}
-
-.revision-link-item:hover {
-  background-color: #f0f3f5;
-}
-
-.revision-link-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 8px;
-}
-
-.document-name {
-  font-weight: bold;
-  color: #14171a;
-}
-
-.revision-title {
-  color: #1da1f2;
-}
-
-.revision-description {
-  font-size: 14px;
-  color: #657786;
-  margin-bottom: 8px;
-}
-
-.revision-date {
-  font-size: 12px;
-  color: #657786;
-}
-
 .profile-header {
   background-color: #f0f0f0;
   padding: 20px;
@@ -347,6 +296,68 @@ h1 {
   background-color: #e5e7eb;
 }
 
+.linked-revisions {
+  background-color: #ffffff;
+  border: 1px solid #e1e8ed;
+  border-radius: 12px;
+  padding: 20px;
+  margin: 0 20px 20px;
+}
+
+.linked-revisions h2 {
+  font-size: 18px;
+  margin: 0 0 16px;
+  color: #14171a;
+}
+
+.revision-links {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.revision-link-item {
+  display: block;
+  padding: 16px;
+  background-color: #f8f9fa;
+  border: 1px solid #e1e8ed;
+  border-radius: 8px;
+  text-decoration: none;
+  color: inherit;
+  transition: background-color 0.2s ease;
+}
+
+.revision-link-item:hover {
+  background-color: #f3f4f6;
+}
+
+.revision-link-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.document-name {
+  font-weight: bold;
+  color: #14171a;
+}
+
+.revision-title {
+  color: #1da1f2;
+}
+
+.revision-description {
+  color: #4b5563;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.revision-date {
+  color: #657786;
+  font-size: 12px;
+}
+
 .search-container {
   margin: 20px;
   display: flex;
@@ -398,46 +409,96 @@ h1 {
   color: #14171a;
 }
 
+.qa-content {
+  background-color: #ffffff;
+  border: 1px solid #e1e8ed;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.question,
+.answer {
+  padding: 20px;
+  position: relative;
+}
+
+.question {
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e1e8ed;
+}
+
+.answer {
+  background-color: #ffffff;
+}
+
+.qa-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 4px 12px;
+  border-radius: 16px;
+  margin-bottom: 12px;
+}
+
+.question .qa-label {
+  background-color: #e8f5fd;
+  color: #1da1f2;
+}
+
+.answer .qa-label {
+  background-color: #f3f4f6;
+  color: #4b5563;
+}
+
+.qa-label i {
+  font-size: 16px;
+}
+
 .tweet-content {
   font-size: 16px;
-  line-height: 1.5;
+  line-height: 1.6;
   color: #2d3748;
   white-space: pre-wrap;
   word-break: break-word;
+  margin: 0;
+  padding: 0 12px;
 }
 
 .meta-info {
-  margin-top: 12px;
-  display: flex;
-  gap: 12px;
+  padding: 12px 20px;
+  border-top: 1px solid #e1e8ed;
+  background-color: #f8f9fa;
 }
 
 .link-count,
 .public-comment-count {
   display: inline-flex;
   align-items: center;
-  padding: 4px 8px;
-  background-color: #f3f4f6;
-  border-radius: 12px;
+  gap: 6px;
+  padding: 4px 12px;
+  background-color: #ffffff;
+  border: 1px solid #e1e8ed;
+  border-radius: 16px;
   font-size: 12px;
   color: #4b5563;
+  transition: background-color 0.2s ease;
 }
 
-.qa-content {
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  padding: 16px;
+.link-count:hover,
+.public-comment-count:hover {
+  background-color: #f3f4f6;
 }
 
-.question,
-.answer {
-  margin-bottom: 16px;
+.link-count i {
+  color: #1da1f2;
 }
 
-.qa-label {
-  font-weight: bold;
-  color: #4b5563;
-  margin-bottom: 8px;
+:deep(.highlight) {
+  background-color: #fff3cd;
+  padding: 2px;
+  border-radius: 2px;
 }
 
 @media (max-width: 768px) {
@@ -445,13 +506,9 @@ h1 {
     padding: 16px;
   }
 
-  h1 {
-    font-size: 1.2em;
-    padding: 0 40px;
-  }
-
-  .document-actions {
-    flex-wrap: wrap;
+  .linked-revisions {
+    margin: 0 16px 16px;
+    padding: 16px;
   }
 
   .search-container {
@@ -466,15 +523,22 @@ h1 {
     padding: 12px;
   }
 
-  .linked-revisions {
-    margin: 16px;
+  .qa-content {
+    border-radius: 8px;
+  }
+
+  .question,
+  .answer {
     padding: 16px;
   }
 
-  .revision-link-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
+  .tweet-content {
+    font-size: 15px;
+    padding: 0 8px;
+  }
+
+  .meta-info {
+    padding: 12px 16px;
   }
 }
 </style>
