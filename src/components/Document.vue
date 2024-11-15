@@ -28,7 +28,7 @@
         <router-link
           v-for="revision in linkedRevisions"
           :key="`${revision.documentId}-${revision.id}`"
-          :to="`/revisions/${revision.documentId}`"
+          :to="`/revisions/${revision.documentId}/${revision.id}`"
           class="revision-link-item"
         >
           <div class="revision-link-header">
@@ -122,6 +122,24 @@ export default {
       }
     })
 
+    const filteredItems = computed(() => {
+      if (!document.value) return []
+      
+      const items = document.value.public_comment ? document.value.questions : document.value.tweets
+      if (!searchQuery.value) return items
+
+      const searchTerms = searchQuery.value.toLowerCase().split(' ').filter(term => term.length > 0)
+      
+      return items.filter(item => {
+        const content = document.value.public_comment
+          ? `${item.question} ${item.answer}`
+          : item.content
+        const searchContent = content.toLowerCase()
+        
+        return searchTerms.every(term => searchContent.includes(term))
+      })
+    })
+
     const linkedRevisions = computed(() => {
       if (!document.value?.public_comment) return []
 
@@ -143,24 +161,6 @@ export default {
       return allRevisions.sort((a, b) => new Date(b.date) - new Date(a.date))
     })
 
-    const filteredItems = computed(() => {
-      if (!document.value) return []
-      
-      const items = document.value.public_comment ? document.value.questions : document.value.tweets
-      if (!searchQuery.value) return items
-
-      const searchTerms = searchQuery.value.toLowerCase().split(' ').filter(term => term.length > 0)
-      
-      return items.filter(item => {
-        const content = document.value.public_comment
-          ? `${item.question} ${item.answer}`
-          : item.content
-        const searchContent = content.toLowerCase()
-        
-        return searchTerms.every(term => searchContent.includes(term))
-      })
-    })
-
     const formatDisplayName = (name) => {
       return name?.replace(/<br>/gi, '') || ''
     }
@@ -174,7 +174,6 @@ export default {
     }
 
     const highlightContent = (text) => {
-      if (!text) return ''
       let content = text.replace(/<br>/gi, '\n')
       
       if (searchQuery.value) {
@@ -211,8 +210,8 @@ export default {
       document,
       isSearchFocused,
       searchQuery,
-      linkedRevisions,
       filteredItems,
+      linkedRevisions,
       formatDisplayName,
       formatDate,
       highlightContent,
@@ -296,6 +295,67 @@ h1 {
   background-color: #e5e7eb;
 }
 
+.search-container {
+  margin: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.search-input {
+  width: 100%;
+  max-width: 600px;
+  padding: 12px 20px;
+  border: 2px solid #e1e8ed;
+  border-radius: 30px;
+  font-size: 16px;
+  transition: all 0.3s ease;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #1da1f2;
+  box-shadow: 0 0 0 2px rgba(29, 161, 242, 0.1);
+}
+
+.tweets {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.tweet {
+  background-color: #ffffff;
+  border: 1px solid #e1e8ed;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.tweet:hover {
+  background-color: #f8f9fa;
+}
+
+.tweet-header {
+  margin-bottom: 12px;
+}
+
+.index {
+  font-weight: bold;
+  color: #14171a;
+}
+
+.tweet-content {
+  font-size: 16px;
+  line-height: 1.6;
+  color: #2d3748;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+  padding: 0 12px;
+}
+
 .linked-revisions {
   background-color: #ffffff;
   border: 1px solid #e1e8ed;
@@ -358,57 +418,6 @@ h1 {
   font-size: 12px;
 }
 
-.search-container {
-  margin: 20px;
-  display: flex;
-  justify-content: center;
-}
-
-.search-input {
-  width: 100%;
-  max-width: 600px;
-  padding: 12px 20px;
-  border: 2px solid #e1e8ed;
-  border-radius: 30px;
-  font-size: 16px;
-  transition: all 0.3s ease;
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: #1da1f2;
-  box-shadow: 0 0 0 2px rgba(29, 161, 242, 0.1);
-}
-
-.tweets {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 0 20px;
-}
-
-.tweet {
-  background-color: #ffffff;
-  border: 1px solid #e1e8ed;
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 12px;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.tweet:hover {
-  background-color: #f8f9fa;
-}
-
-.tweet-header {
-  margin-bottom: 12px;
-}
-
-.index {
-  font-weight: bold;
-  color: #14171a;
-}
-
 .qa-content {
   background-color: #ffffff;
   border: 1px solid #e1e8ed;
@@ -456,16 +465,6 @@ h1 {
   font-size: 16px;
 }
 
-.tweet-content {
-  font-size: 16px;
-  line-height: 1.6;
-  color: #2d3748;
-  white-space: pre-wrap;
-  word-break: break-word;
-  margin: 0;
-  padding: 0 12px;
-}
-
 .meta-info {
   padding: 12px 20px;
   border-top: 1px solid #e1e8ed;
@@ -482,7 +481,7 @@ h1 {
   border: 1px solid #e1e8ed;
   border-radius: 16px;
   font-size: 12px;
-  color: #4b5563;
+  color: #657786;
   transition: background-color 0.2s ease;
 }
 
@@ -502,10 +501,6 @@ h1 {
 }
 
 @media (max-width: 768px) {
-  .profile-header {
-    padding: 16px;
-  }
-
   .linked-revisions {
     margin: 0 16px 16px;
     padding: 16px;
@@ -517,10 +512,6 @@ h1 {
 
   .tweets {
     padding: 0 16px;
-  }
-
-  .tweet {
-    padding: 12px;
   }
 
   .qa-content {
