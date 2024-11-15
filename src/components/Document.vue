@@ -5,17 +5,21 @@
       <h1>{{ formatDisplayName(document.displayName) }}</h1>
       <div class="document-actions">
         <router-link 
-          v-if="document.revisions"
           :to="`/revisions/${$route.params.id}`" 
           class="revision-link"
         >
-          改訂履歴を表示
+          <i class="fas fa-history"></i>
+          {{ document.revisions ? '改訂履歴を表示' : '改訂履歴を追加' }}
+          <span v-if="document.revisions" class="revision-count">
+            ({{ document.revisions.length }}件)
+          </span>
         </router-link>
         <a v-if="document.public_comment && document.url" 
            :href="document.url" 
            target="_blank" 
            rel="noopener noreferrer" 
            class="original-doc-btn">
+          <i class="fas fa-external-link-alt"></i>
           原文を表示
         </a>
       </div>
@@ -88,7 +92,10 @@
         <template v-else>
           <p class="tweet-content" v-html="highlightContent(item.content)"></p>
           <div class="meta-info">
-            <span v-if="item.links" class="link-count">関連リンク({{ item.links.length }})</span>
+            <span v-if="item.links" class="link-count">
+              <i class="fas fa-link"></i>
+              関連リンク({{ item.links.length }})
+            </span>
             <span v-if="item.public_comment_links" class="public-comment-count">
               パブリックコメント({{ item.public_comment_links.length }})
             </span>
@@ -223,7 +230,7 @@ export default {
 
 <style scoped>
 .profile-header {
-  background-color: #f0f0f0;
+  background-color: #ffffff;
   padding: 20px;
   margin-bottom: 20px;
   position: relative;
@@ -231,6 +238,8 @@ export default {
   flex-direction: column;
   align-items: center;
   min-height: 80px;
+  border: 1px solid #e1e8ed;
+  border-radius: 12px;
 }
 
 .back-link {
@@ -260,7 +269,7 @@ h1 {
 }
 
 .document-actions {
-  margin-top: 12px;
+  margin-top: 16px;
   display: flex;
   gap: 12px;
   justify-content: center;
@@ -270,8 +279,9 @@ h1 {
 .original-doc-btn {
   display: inline-flex;
   align-items: center;
-  padding: 6px 12px;
-  border-radius: 16px;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 20px;
   font-size: 14px;
   text-decoration: none;
   transition: background-color 0.2s ease;
@@ -286,6 +296,10 @@ h1 {
   background-color: #d8effd;
 }
 
+.revision-count {
+  color: #1a91da;
+}
+
 .original-doc-btn {
   background-color: #f3f4f6;
   color: #4b5563;
@@ -293,67 +307,6 @@ h1 {
 
 .original-doc-btn:hover {
   background-color: #e5e7eb;
-}
-
-.search-container {
-  margin: 20px;
-  display: flex;
-  justify-content: center;
-}
-
-.search-input {
-  width: 100%;
-  max-width: 600px;
-  padding: 12px 20px;
-  border: 2px solid #e1e8ed;
-  border-radius: 30px;
-  font-size: 16px;
-  transition: all 0.3s ease;
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: #1da1f2;
-  box-shadow: 0 0 0 2px rgba(29, 161, 242, 0.1);
-}
-
-.tweets {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 0 20px;
-}
-
-.tweet {
-  background-color: #ffffff;
-  border: 1px solid #e1e8ed;
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 12px;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.tweet:hover {
-  background-color: #f8f9fa;
-}
-
-.tweet-header {
-  margin-bottom: 12px;
-}
-
-.index {
-  font-weight: bold;
-  color: #14171a;
-}
-
-.tweet-content {
-  font-size: 16px;
-  line-height: 1.6;
-  color: #2d3748;
-  white-space: pre-wrap;
-  word-break: break-word;
-  margin: 0;
-  padding: 0 12px;
 }
 
 .linked-revisions {
@@ -394,7 +347,6 @@ h1 {
 .revision-link-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
   margin-bottom: 8px;
 }
 
@@ -418,6 +370,68 @@ h1 {
   font-size: 12px;
 }
 
+.search-container {
+  margin: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.search-input {
+  width: 100%;
+  max-width: 600px;
+  padding: 12px 20px;
+  border: 2px solid #e1e8ed;
+  border-radius: 30px;
+  font-size: 16px;
+  transition: all 0.3s ease;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #1da1f2;
+  box-shadow: 0 0 0 2px rgba(29, 161, 242, 0.1);
+}
+
+.tweets {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.tweet {
+  background-color: #ffffff;
+  border: 1px solid #e1e8ed;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 16px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.tweet:hover {
+  background-color: #f8f9fa;
+}
+
+.tweet-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid #e1e8ed;
+}
+
+.index {
+  font-weight: bold;
+  color: #14171a;
+}
+
+.tweet-content {
+  font-size: 16px;
+  line-height: 1.6;
+  color: #2d3748;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+  padding: 0 12px;
+}
+
 .qa-content {
   background-color: #ffffff;
   border: 1px solid #e1e8ed;
@@ -425,19 +439,15 @@ h1 {
   overflow: hidden;
 }
 
-.question,
-.answer {
-  padding: 20px;
-  position: relative;
-}
-
 .question {
   background-color: #f8f9fa;
   border-bottom: 1px solid #e1e8ed;
+  padding: 20px;
 }
 
 .answer {
   background-color: #ffffff;
+  padding: 20px;
 }
 
 .qa-label {
@@ -469,6 +479,8 @@ h1 {
   padding: 12px 20px;
   border-top: 1px solid #e1e8ed;
   background-color: #f8f9fa;
+  display: flex;
+  gap: 12px;
 }
 
 .link-count,
@@ -503,7 +515,6 @@ h1 {
 @media (max-width: 768px) {
   .linked-revisions {
     margin: 0 16px 16px;
-    padding: 16px;
   }
 
   .search-container {
@@ -530,6 +541,18 @@ h1 {
 
   .meta-info {
     padding: 12px 16px;
+  }
+
+  .document-actions {
+    flex-direction: column;
+    width: 100%;
+    padding: 0 16px;
+  }
+
+  .revision-link,
+  .original-doc-btn {
+    width: 100%;
+    justify-content: center;
   }
 }
 </style>
