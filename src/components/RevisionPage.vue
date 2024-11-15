@@ -117,7 +117,7 @@
             <div v-for="article in revision.articles" :key="article.id" class="article-container">
               <div class="article-status" :class="article.status">{{ article.status }}</div>
               <div class="comparison-container">
-                <div v-if="article.status !== '新設'" class="comparison-column before">
+                <div class="comparison-column before">
                   <h4>改正前</h4>
                   <div v-if="article.before" class="content" v-html="article.before"></div>
                   <div v-else class="no-content">改正前の内容なし</div>
@@ -200,6 +200,10 @@ export default {
       }).filter(Boolean)
     })
 
+    const formatDisplayName = (name) => {
+      return name.replace(/<br>/gi, '')
+    }
+
     const loadDocuments = () => {
       const storedData = localStorage.getItem(STORAGE_KEY)
       if (storedData) {
@@ -223,10 +227,6 @@ export default {
         month: '2-digit',
         day: '2-digit'
       })
-    }
-
-    const formatDisplayName = (name) => {
-      return name.replace(/<br>/gi, '')
     }
 
     const addNewRevision = () => {
@@ -278,7 +278,6 @@ export default {
       pageTitle,
       loadRevisions,
       formatDate,
-      formatDisplayName,
       addNewRevision,
       editRevision,
       deleteRevision,
@@ -286,7 +285,8 @@ export default {
       publicCommentLinks,
       linkedPublicComments,
       showDebug,
-      toggleDebug
+      toggleDebug,
+      formatDisplayName
     }
   }
 }
@@ -296,61 +296,6 @@ export default {
 .revision-page {
   min-height: 100vh;
   background-color: #f7f9fa;
-}
-
-.debug-panel {
-  background: white;
-  border: 1px solid #e1e8ed;
-  border-radius: 8px;
-  margin: 20px;
-}
-
-.debug-header {
-  padding: 12px;
-  background-color: #f8f9fa;
-  border-bottom: 1px solid #e1e8ed;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: bold;
-  color: #1da1f2;
-}
-
-.debug-content {
-  padding: 16px;
-}
-
-.debug-section {
-  margin-bottom: 20px;
-}
-
-.debug-section h4 {
-  margin: 0 0 12px 0;
-  color: #14171a;
-}
-
-.debug-item {
-  margin-bottom: 8px;
-  font-family: monospace;
-}
-
-.debug-item strong {
-  color: #657786;
-}
-
-.debug-item pre {
-  margin: 8px 0;
-  padding: 8px;
-  background-color: #f8f9fa;
-  border-radius: 4px;
-  overflow-x: auto;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-.toggle-icon {
-  margin-left: auto;
 }
 
 .page-header {
@@ -544,7 +489,6 @@ h1 {
 
 .public-comments-list {
   display: flex;
-  flex-wrap: wrap;
   gap: 8px;
 }
 
