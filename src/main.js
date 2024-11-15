@@ -7,6 +7,7 @@ import Tweet from './components/Tweet.vue'
 import RevisionPage from './components/RevisionPage.vue'
 import RevisionDetail from './components/RevisionDetail.vue'
 import RevisionEditorPage from './components/RevisionEditorPage.vue'
+import PublicCommentEditor from './components/PublicCommentEditor.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -14,11 +15,7 @@ const router = createRouter({
     { path: '/', component: Index },
     { path: '/document/:id', component: Document },
     { path: '/document/:documentId/:tweetId', component: Tweet, name: 'tweet' },
-    { 
-      path: '/revisions/:documentId', 
-      component: RevisionPage,
-      name: 'revisions'
-    },
+    { path: '/revisions/:documentId', component: RevisionPage, name: 'revisions' },
     { 
       path: '/revisions/:documentId/:revisionId', 
       component: RevisionDetail,
@@ -35,6 +32,11 @@ const router = createRouter({
       component: RevisionEditorPage,
       name: 'revision-editor-edit',
       props: true
+    },
+    {
+      path: '/public-comment/new',
+      component: PublicCommentEditor,
+      name: 'public-comment-new'
     }
   ]
 })

@@ -27,12 +27,11 @@
             
             <div class="document-actions">
               <router-link 
-                v-if="doc.revisions"
                 :to="`/revisions/${id}`" 
                 class="action-button revision-button"
               >
                 <i class="fas fa-history"></i>
-                改訂履歴を表示
+                {{ doc.revisions ? '改訂履歴を表示' : '改訂履歴を追加' }}
               </router-link>
               <a 
                 v-if="doc.public_comment && doc.url" 
@@ -67,6 +66,10 @@
     <footer class="footer">
       <div class="footer-content">
         <div class="footer-buttons">
+          <router-link to="/public-comment/new" class="footer-button">
+            <i class="fas fa-plus"></i>
+            <span>パブリックコメントを追加</span>
+          </router-link>
           <button class="footer-button" @click="downloadDocuments">
             <i class="fas fa-download"></i>
             <span>JSONをダウンロード</span>
@@ -109,6 +112,7 @@ export default {
     const isSearchFocused = ref(false)
     const documents = ref(documentsData)
     const showingJsonDiffViewer = ref(false)
+    const searchQuery = ref('')
 
     onMounted(() => {
       const storedData = localStorage.getItem(STORAGE_KEY)
@@ -135,15 +139,6 @@ export default {
       }
     }
 
-    const searchQuery = computed({
-      get: () => route.query.q || '',
-      set: (value) => {
-        router.replace({
-          query: { ...route.query, q: value || undefined }
-        })
-      }
-    })
-
     watch(searchQuery, (newValue) => {
       router.replace({
         query: { ...route.query, q: newValue || undefined }
@@ -164,7 +159,7 @@ export default {
     })
 
     const formatDisplayName = (name) => {
-      return name?.replace(/<br>/gi, '') || ''
+      return name.replace(/<br>/gi, '')
     }
 
     const getSearchableContent = (doc) => {
@@ -199,9 +194,7 @@ export default {
       if (match.type.startsWith('改訂')) {
         return {
           path: `/revisions/${docId}/${match.revisionId}`,
-          query: { 
-            highlight: match.content
-          }
+          query: { highlight: match.content }
         }
       } else if (match.type.startsWith('質問') || match.type.startsWith('回答')) {
         return {
@@ -509,7 +502,6 @@ h1 {
 
 .document-actions {
   padding: 12px 16px;
-  border-top: 1px solid #e1e8ed;
   display: flex;
   gap: 12px;
 }
