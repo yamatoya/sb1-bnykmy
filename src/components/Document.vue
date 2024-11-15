@@ -21,6 +21,30 @@
       </div>
     </div>
 
+    <!-- 関連する改訂履歴へのリンク -->
+    <div v-if="document.public_comment && linkedRevisions.length > 0" class="linked-revisions">
+      <h2>関連する改訂履歴</h2>
+      <div class="revision-links">
+        <router-link
+          v-for="revision in linkedRevisions"
+          :key="`${revision.documentId}-${revision.id}`"
+          :to="`/revisions/${revision.documentId}`"
+          class="revision-link-item"
+        >
+          <div class="revision-link-header">
+            <span class="document-name">{{ formatDisplayName(revision.documentName) }}</span>
+            <span class="revision-title">{{ revision.title }}</span>
+          </div>
+          <div v-if="revision.description" class="revision-description">
+            {{ revision.description }}
+          </div>
+          <div class="revision-date">
+            {{ formatDate(revision.date) }}
+          </div>
+        </router-link>
+      </div>
+    </div>
+
     <div class="search-container">
       <input
         type="text"
@@ -79,22 +103,47 @@ export default {
     const router = useRouter()
     const document = ref(null)
     const isSearchFocused = ref(false)
+    const documents = ref(null)
 
     onMounted(() => {
-      loadDocument()
+      loadDocuments()
     })
 
-    const loadDocument = () => {
+    const loadDocuments = () => {
       const storedData = localStorage.getItem(STORAGE_KEY)
       if (storedData) {
         try {
-          const documents = JSON.parse(storedData)
-          document.value = documents[route.params.id]
+          documents.value = JSON.parse(storedData)
+          document.value = documents.value[route.params.id]
         } catch (e) {
           console.error('Failed to parse stored documents:', e)
         }
       }
     }
+
+    const linkedRevisions = computed(() => {
+      if (!documents.value || !document.value?.public_comment) return []
+
+      const revisions = []
+      Object.entries(documents.value).forEach(([docId, doc]) => {
+        if (doc.revisions) {
+          doc.revisions.forEach(revision => {
+            if (revision.publicCommentLinks?.includes(route.params.id)) {
+              revisions.push({
+                documentId: docId,
+                documentName: doc.displayName,
+                id: revision.id,
+                title: revision.title,
+                description: revision.description,
+                date: revision.date
+              })
+            }
+          })
+        }
+      })
+
+      return revisions.sort((a, b) => new Date(b.date) - new Date(a.date))
+    })
 
     const searchQuery = computed({
       get: () => route.query.q || '',
@@ -124,7 +173,15 @@ export default {
     })
 
     const formatDisplayName = (name) => {
-      return name?.replace(/<br>/gi, '\n') || ''
+      return name?.replace(/<br>/gi, '') || ''
+    }
+
+    const formatDate = (dateString) => {
+      return new Date(dateString).toLocaleDateString('ja-JP', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      })
     }
 
     const highlightContent = (text) => {
@@ -144,7 +201,9 @@ export default {
       isSearchFocused,
       searchQuery,
       filteredItems,
+      linkedRevisions,
       formatDisplayName,
+      formatDate,
       highlightContent,
       goToItem
     }
@@ -153,6 +212,68 @@ export default {
 </script>
 
 <style scoped>
+.linked-revisions {
+  background: white;
+  border: 1px solid #e1e8ed;
+  border-radius: 8px;
+  margin: 20px;
+  padding: 20px;
+}
+
+.linked-revisions h2 {
+  font-size: 18px;
+  color: #14171a;
+  margin: 0 0 16px 0;
+}
+
+.revision-links {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.revision-link-item {
+  display: block;
+  padding: 16px;
+  background-color: #f8f9fa;
+  border: 1px solid #e1e8ed;
+  border-radius: 8px;
+  text-decoration: none;
+  color: inherit;
+  transition: background-color 0.2s ease;
+}
+
+.revision-link-item:hover {
+  background-color: #f0f3f5;
+}
+
+.revision-link-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.document-name {
+  font-weight: bold;
+  color: #14171a;
+}
+
+.revision-title {
+  color: #1da1f2;
+}
+
+.revision-description {
+  font-size: 14px;
+  color: #657786;
+  margin-bottom: 8px;
+}
+
+.revision-date {
+  font-size: 12px;
+  color: #657786;
+}
+
 .profile-header {
   background-color: #f0f0f0;
   padding: 20px;
@@ -343,6 +464,17 @@ h1 {
 
   .tweet {
     padding: 12px;
+  }
+
+  .linked-revisions {
+    margin: 16px;
+    padding: 16px;
+  }
+
+  .revision-link-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
   }
 }
 </style>
