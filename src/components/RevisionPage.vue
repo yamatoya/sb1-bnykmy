@@ -1,5 +1,43 @@
 <template>
   <div class="revision-page">
+    <!-- デバッグ情報パネル -->
+    <div class="debug-panel">
+      <div class="debug-header" @click="toggleDebug">
+        <i class="fas fa-bug"></i> デバッグ情報
+        <span class="toggle-icon">{{ showDebug ? '▼' : '▶' }}</span>
+      </div>
+      <div v-if="showDebug" class="debug-content">
+        <div class="debug-section">
+          <h4>基本情報</h4>
+          <div class="debug-item">
+            <strong>Document ID:</strong> {{ documentId }}
+          </div>
+          <div class="debug-item">
+            <strong>Current Document:</strong> {{ currentDocument?.displayName }}
+          </div>
+        </div>
+
+        <div class="debug-section">
+          <h4>改訂情報</h4>
+          <div class="debug-item">
+            <strong>改訂数:</strong> {{ sortedRevisions.length }}
+          </div>
+          <div class="debug-item">
+            <strong>パブリックコメントリンク:</strong>
+            <pre>{{ JSON.stringify(publicCommentLinks, null, 2) }}</pre>
+          </div>
+        </div>
+
+        <div class="debug-section">
+          <h4>パブリックコメント情報</h4>
+          <div class="debug-item">
+            <strong>リンクされたパブリックコメント:</strong>
+            <pre>{{ JSON.stringify(linkedPublicComments, null, 2) }}</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <header class="page-header">
       <router-link :to="backLink" class="back-link">
         <i class="fas fa-arrow-left"></i>
@@ -61,6 +99,19 @@
                 {{ revision.sourceUrl }}
               </a>
             </div>
+            <div v-if="getPublicComments(revision).length > 0" class="info-row">
+              <span class="label">パブリックコメント:</span>
+              <div class="public-comments-list">
+                <router-link
+                  v-for="comment in getPublicComments(revision)"
+                  :key="comment.id"
+                  :to="`/document/${comment.id}`"
+                  class="public-comment-link"
+                >
+                  {{ formatDisplayName(comment.displayName) }}
+                </router-link>
+              </div>
+            </div>
           </div>
           <div class="articles-list">
             <div v-for="article in revision.articles" :key="article.id" class="article-container">
@@ -98,8 +149,9 @@ export default {
     const router = useRouter()
     const documents = ref(null)
     const selectedDocument = ref('')
+    const showDebug = ref(false)
 
-    const documentId = computed(() => route.params.documentId || selectedDocument.value)
+    const documentId = computed(() => route.params.documentId)
     
     const backLink = computed(() => {
       return documentId.value ? `/document/${documentId.value}` : '/'
@@ -120,6 +172,32 @@ export default {
       return [...currentDocument.value.revisions].sort((a, b) => {
         return new Date(b.date) - new Date(a.date)
       })
+    })
+
+    const publicCommentLinks = computed(() => {
+      return sortedRevisions.value.reduce((acc, revision) => {
+        if (revision.publicCommentLinks) {
+          acc[revision.id] = revision.publicCommentLinks
+        }
+        return acc
+      }, {})
+    })
+
+    const linkedPublicComments = computed(() => {
+      const links = new Set()
+      sortedRevisions.value.forEach(revision => {
+        if (revision.publicCommentLinks) {
+          revision.publicCommentLinks.forEach(id => links.add(id))
+        }
+      })
+      return Array.from(links).map(id => {
+        const doc = documents.value[id]
+        return doc ? {
+          id,
+          displayName: doc.displayName,
+          hasPublicComment: !!doc.public_comment
+        } : null
+      }).filter(Boolean)
     })
 
     const loadDocuments = () => {
@@ -147,6 +225,10 @@ export default {
       })
     }
 
+    const formatDisplayName = (name) => {
+      return name.replace(/<br>/gi, '')
+    }
+
     const addNewRevision = () => {
       router.push(`/revisions/${documentId.value}/new`)
     }
@@ -171,6 +253,17 @@ export default {
       }
     }
 
+    const getPublicComments = (revision) => {
+      if (!revision.publicCommentLinks || !documents.value) return []
+      return revision.publicCommentLinks
+        .map(id => documents.value[id])
+        .filter(doc => doc && doc.public_comment)
+    }
+
+    const toggleDebug = () => {
+      showDebug.value = !showDebug.value
+    }
+
     onMounted(() => {
       loadDocuments()
     })
@@ -185,9 +278,15 @@ export default {
       pageTitle,
       loadRevisions,
       formatDate,
+      formatDisplayName,
       addNewRevision,
       editRevision,
-      deleteRevision
+      deleteRevision,
+      getPublicComments,
+      publicCommentLinks,
+      linkedPublicComments,
+      showDebug,
+      toggleDebug
     }
   }
 }
@@ -197,6 +296,61 @@ export default {
 .revision-page {
   min-height: 100vh;
   background-color: #f7f9fa;
+}
+
+.debug-panel {
+  background: white;
+  border: 1px solid #e1e8ed;
+  border-radius: 8px;
+  margin: 20px;
+}
+
+.debug-header {
+  padding: 12px;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e1e8ed;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: bold;
+  color: #1da1f2;
+}
+
+.debug-content {
+  padding: 16px;
+}
+
+.debug-section {
+  margin-bottom: 20px;
+}
+
+.debug-section h4 {
+  margin: 0 0 12px 0;
+  color: #14171a;
+}
+
+.debug-item {
+  margin-bottom: 8px;
+  font-family: monospace;
+}
+
+.debug-item strong {
+  color: #657786;
+}
+
+.debug-item pre {
+  margin: 8px 0;
+  padding: 8px;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.toggle-icon {
+  margin-left: auto;
 }
 
 .page-header {
@@ -225,8 +379,6 @@ h1 {
   margin: 0;
   font-size: 24px;
   color: #14171a;
-  flex-grow: 1;
-  text-align: center;
 }
 
 .page-content {
@@ -390,6 +542,28 @@ h1 {
   text-decoration: underline;
 }
 
+.public-comments-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.public-comment-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  background-color: #e8f5fd;
+  color: #1da1f2;
+  border-radius: 16px;
+  text-decoration: none;
+  font-size: 14px;
+  transition: background-color 0.2s ease;
+}
+
+.public-comment-link:hover {
+  background-color: #d8effd;
+}
+
 .articles-list {
   padding: 16px;
 }
@@ -458,14 +632,6 @@ h1 {
 @media (max-width: 768px) {
   .page-header {
     padding: 16px;
-    flex-wrap: wrap;
-  }
-
-  h1 {
-    font-size: 20px;
-    width: 100%;
-    order: -1;
-    margin-bottom: 12px;
   }
 
   .page-content {
@@ -493,6 +659,18 @@ h1 {
 
   .label {
     min-width: auto;
+  }
+
+  .debug-panel {
+    margin: 12px;
+  }
+
+  .debug-content {
+    padding: 12px;
+  }
+
+  .debug-item pre {
+    font-size: 12px;
   }
 }
 </style>

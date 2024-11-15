@@ -25,6 +25,27 @@
               </div>
             </router-link>
             
+            <div class="document-actions">
+              <router-link 
+                v-if="doc.revisions"
+                :to="`/revisions/${id}`" 
+                class="action-button revision-button"
+              >
+                <i class="fas fa-history"></i>
+                改訂履歴を表示
+              </router-link>
+              <a 
+                v-if="doc.public_comment && doc.url" 
+                :href="doc.url" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                class="action-button original-button"
+              >
+                <i class="fas fa-external-link-alt"></i>
+                原文を表示
+              </a>
+            </div>
+
             <div v-if="searchQuery && getMatchingContent(doc, id).length > 0" class="search-matches">
               <div v-for="(match, index) in getMatchingContent(doc, id)" :key="index" class="match-item">
                 <router-link 
@@ -481,6 +502,44 @@ h1 {
   border-radius: 12px;
   font-size: 12px;
   font-weight: 500;
+}
+
+.document-actions {
+  padding: 12px 16px;
+  border-top: 1px solid #e1e8ed;
+  display: flex;
+  gap: 12px;
+}
+
+.action-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.revision-button {
+  background-color: #e8f5fd;
+  color: #1da1f2;
+  border: none;
+}
+
+.revision-button:hover {
+  background-color: #d8effd;
+}
+
+.original-button {
+  background-color: #f3f4f6;
+  color: #4b5563;
+  border: none;
+}
+
+.original-button:hover {
+  background-color: #e5e7eb;
 }
 
 .search-matches {
