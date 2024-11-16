@@ -51,7 +51,8 @@
               </div>
               <div class="comparison-column after">
                 <h4>改正後</h4>
-                <div v-if="article.after" class="content">{{ article.after }}</div>
+                <div v-if="article.status === '削除'" class="content deleted">削除</div>
+                <div v-else-if="article.after" class="content">{{ article.after }}</div>
                 <div v-else class="no-content">改正後の内容なし</div>
               </div>
             </div>
@@ -322,6 +323,12 @@ h1 {
   word-break: break-word;
   line-height: 1.6;
   font-size: 14px;
+}
+
+.content.deleted {
+  color: #ef4444;
+  font-weight: bold;
+  font-style: italic;
 }
 
 .no-content {
