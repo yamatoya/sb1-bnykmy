@@ -15,8 +15,7 @@
           <div class="revision-date">{{ formatDate(currentRevision.date) }}</div>
         </div>
 
-        <div v-if="currentRevision.description" class="revision-description">
-          {{ currentRevision.description }}
+        <div v-if="currentRevision.description" class="revision-description" v-html="formatText(currentRevision.description)">
         </div>
 
         <div v-if="currentRevision.sourceUrl" class="revision-source">
@@ -46,13 +45,13 @@
             <div class="comparison-container">
               <div class="comparison-column before">
                 <h4>改正前</h4>
-                <div v-if="article.before" class="content">{{ article.before }}</div>
+                <div v-if="article.before" class="content" v-html="formatText(article.before)"></div>
                 <div v-else class="no-content">改正前の内容なし</div>
               </div>
               <div class="comparison-column after">
                 <h4>改正後</h4>
                 <div v-if="article.status === '削除'" class="content deleted">削除</div>
-                <div v-else-if="article.after" class="content">{{ article.after }}</div>
+                <div v-else-if="article.after" class="content" v-html="formatText(article.after)"></div>
                 <div v-else class="no-content">改正後の内容なし</div>
               </div>
             </div>
@@ -118,6 +117,11 @@ export default {
       })
     }
 
+    const formatText = (text) => {
+      if (!text) return ''
+      return text.replace(/\n/g, '<br>')
+    }
+
     onMounted(() => {
       const storedData = localStorage.getItem(STORAGE_KEY)
       if (storedData) {
@@ -136,7 +140,8 @@ export default {
       pageTitle,
       publicComments,
       formatDisplayName,
-      formatDate
+      formatDate,
+      formatText
     }
   }
 }
