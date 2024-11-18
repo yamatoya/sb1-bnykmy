@@ -5,7 +5,7 @@
         <i class="fas fa-arrow-left"></i>
         <span>戻る</span>
       </router-link>
-      <h1>パブリックコメントの追加</h1>
+      <h1>{{ isEditing ? 'パブリックコメントの編集' : 'パブリックコメントの追加' }}</h1>
     </header>
 
     <main class="page-content">
@@ -86,8 +86,8 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { v4 as uuidv4 } from 'uuid'
 
 const STORAGE_KEY = 'legal-documents-data'
@@ -95,10 +95,14 @@ const STORAGE_KEY = 'legal-documents-data'
 export default {
   name: 'PublicCommentEditor',
   setup() {
+    const route = useRoute()
     const router = useRouter()
     const displayName = ref('')
     const url = ref('')
     const questions = ref([])
+    const documentId = ref('')
+
+    const isEditing = computed(() => route.query.edit)
 
     const isValid = computed(() => {
       return displayName.value &&
@@ -123,10 +127,34 @@ export default {
       })
     }
 
+    const loadDocument = () => {
+      if (!isEditing.value) return
+
+      const id = route.query.edit
+      const storedData = localStorage.getItem(STORAGE_KEY)
+      if (storedData) {
+        try {
+          const documents = JSON.parse(storedData)
+          const document = documents[id]
+          if (document && document.public_comment) {
+            documentId.value = id
+            displayName.value = document.displayName
+            url.value = document.url || ''
+            questions.value = document.questions.map(q => ({
+              ...q,
+              id: q.id || uuidv4()
+            }))
+          }
+        } catch (e) {
+          console.error('Failed to load document:', e)
+        }
+      }
+    }
+
     const savePublicComment = () => {
-      const documentId = uuidv4()
+      const id = documentId.value || uuidv4()
       const newDocument = {
-        accountId: documentId,
+        accountId: id,
         displayName: displayName.value,
         url: url.value || null,
         public_comment: true,
@@ -136,7 +164,7 @@ export default {
       try {
         const storedData = localStorage.getItem(STORAGE_KEY)
         const documents = storedData ? JSON.parse(storedData) : {}
-        documents[documentId] = newDocument
+        documents[id] = newDocument
         localStorage.setItem(STORAGE_KEY, JSON.stringify(documents))
         router.push('/')
       } catch (e) {
@@ -145,11 +173,16 @@ export default {
       }
     }
 
+    onMounted(() => {
+      loadDocument()
+    })
+
     return {
       displayName,
       url,
       questions,
       isValid,
+      isEditing,
       addQuestion,
       removeQuestion,
       savePublicComment

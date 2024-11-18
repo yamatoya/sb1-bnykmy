@@ -14,6 +14,14 @@
             ({{ document.revisions.length }}件)
           </span>
         </router-link>
+        <router-link
+          v-if="document.public_comment"
+          :to="`/public-comment/new?edit=${$route.params.id}`"
+          class="edit-button"
+        >
+          <i class="fas fa-edit"></i>
+          編集
+        </router-link>
         <a v-if="document.public_comment && document.url" 
            :href="document.url" 
            target="_blank" 
@@ -276,6 +284,7 @@ h1 {
 }
 
 .revision-link,
+.edit-button,
 .original-doc-btn {
   display: inline-flex;
   align-items: center;
@@ -294,6 +303,15 @@ h1 {
 
 .revision-link:hover {
   background-color: #d8effd;
+}
+
+.edit-button {
+  background-color: #dcfce7;
+  color: #16a34a;
+}
+
+.edit-button:hover {
+  background-color: #bbf7d0;
 }
 
 .revision-count {
@@ -550,6 +568,7 @@ h1 {
   }
 
   .revision-link,
+  .edit-button,
   .original-doc-btn {
     width: 100%;
     justify-content: center;
