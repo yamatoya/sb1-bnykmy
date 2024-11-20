@@ -1,3 +1,6 @@
+import React, { useState } from 'react';
+import { useRoute, useRouter } from 'vue-router';
+
 <template>
   <div v-if="document">
     <div class="profile-header">
@@ -532,19 +535,30 @@ h1 {
 
 @media (max-width: 768px) {
   .linked-revisions {
-    margin: 0 16px 16px;
+    margin: 0 8px 16px;
   }
 
   .search-container {
-    margin: 16px;
+    margin: 16px 8px;
   }
 
   .tweets {
-    padding: 0 16px;
+    padding: 0 8px;
+  }
+
+  .tweet {
+    margin-bottom: 0;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+
+  .tweet:first-child {
+    border-top: none;
   }
 
   .qa-content {
-    border-radius: 8px;
+    border-radius: 0;
   }
 
   .question,
