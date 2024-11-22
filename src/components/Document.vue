@@ -1,6 +1,3 @@
-import React, { useState } from 'react';
-import { useRoute, useRouter } from 'vue-router';
-
 <template>
   <div v-if="document">
     <div class="profile-header">
@@ -36,7 +33,6 @@ import { useRoute, useRouter } from 'vue-router';
       </div>
     </div>
 
-    <!-- 関連する改訂履歴へのリンク -->
     <div v-if="document.public_comment && linkedRevisions.length > 0" class="linked-revisions">
       <h2>関連する改訂履歴</h2>
       <div class="revision-links">
@@ -92,8 +88,8 @@ import { useRoute, useRouter } from 'vue-router';
               </div>
               <p class="tweet-content" v-html="highlightContent(item.answer)"></p>
             </div>
-            <div class="meta-info">
-              <span v-if="item.links" class="link-count">
+            <div v-if="item.links?.length" class="meta-info">
+              <span class="link-count">
                 <i class="fas fa-link"></i>
                 関連リンク({{ item.links.length }})
               </span>
@@ -102,12 +98,12 @@ import { useRoute, useRouter } from 'vue-router';
         </template>
         <template v-else>
           <p class="tweet-content" v-html="highlightContent(item.content)"></p>
-          <div class="meta-info">
-            <span v-if="item.links" class="link-count">
+          <div v-if="hasMetaInfo(item)" class="meta-info">
+            <span v-if="item.links?.length" class="link-count">
               <i class="fas fa-link"></i>
               関連リンク({{ item.links.length }})
             </span>
-            <span v-if="item.public_comment_links" class="public-comment-count">
+            <span v-if="item.public_comment_links?.length" class="public-comment-count">
               パブリックコメント({{ item.public_comment_links.length }})
             </span>
           </div>
@@ -162,19 +158,27 @@ export default {
       if (!document.value?.public_comment) return []
 
       const allRevisions = []
-      Object.entries(JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}')).forEach(([docId, doc]) => {
-        if (doc.revisions) {
-          doc.revisions.forEach(revision => {
-            if (revision.publicCommentLinks?.includes(route.params.id)) {
-              allRevisions.push({
-                documentId: docId,
-                documentName: doc.displayName,
-                ...revision
+      const storedData = localStorage.getItem(STORAGE_KEY)
+      if (storedData) {
+        try {
+          const documents = JSON.parse(storedData)
+          Object.entries(documents).forEach(([docId, doc]) => {
+            if (doc.revisions) {
+              doc.revisions.forEach(revision => {
+                if (revision.publicCommentLinks?.includes(route.params.id)) {
+                  allRevisions.push({
+                    documentId: docId,
+                    documentName: doc.displayName,
+                    ...revision
+                  })
+                }
               })
             }
           })
+        } catch (e) {
+          console.error('Failed to parse stored documents:', e)
         }
-      })
+      }
 
       return allRevisions.sort((a, b) => new Date(b.date) - new Date(a.date))
     })
@@ -192,6 +196,7 @@ export default {
     }
 
     const highlightContent = (text) => {
+      if (!text) return ''
       let content = text.replace(/<br>/gi, '\n')
       
       if (searchQuery.value) {
@@ -203,6 +208,10 @@ export default {
       }
       
       return content
+    }
+
+    const hasMetaInfo = (item) => {
+      return (item.links?.length > 0) || (item.public_comment_links?.length > 0)
     }
 
     const goToItem = (itemId) => {
@@ -233,7 +242,8 @@ export default {
       formatDisplayName,
       formatDate,
       highlightContent,
-      goToItem
+      goToItem,
+      hasMetaInfo
     }
   }
 }
@@ -422,11 +432,20 @@ h1 {
 .tweet {
   background-color: #ffffff;
   border: 1px solid #e1e8ed;
-  border-radius: 12px;
-  overflow: hidden;
-  margin-bottom: 16px;
   cursor: pointer;
   transition: background-color 0.2s ease;
+}
+
+.tweet + .tweet {
+  border-top: none;
+}
+
+.tweet:first-child {
+  border-radius: 12px 12px 0 0;
+}
+
+.tweet:last-child {
+  border-radius: 0 0 12px 12px;
 }
 
 .tweet:hover {
@@ -450,14 +469,11 @@ h1 {
   white-space: pre-wrap;
   word-break: break-word;
   margin: 0;
-  padding: 0 12px;
+  padding: 12px 16px;
 }
 
 .qa-content {
   background-color: #ffffff;
-  border: 1px solid #e1e8ed;
-  border-radius: 12px;
-  overflow: hidden;
 }
 
 .question {
@@ -497,7 +513,7 @@ h1 {
 }
 
 .meta-info {
-  padding: 12px 20px;
+  padding: 12px 16px;
   border-top: 1px solid #e1e8ed;
   background-color: #f8f9fa;
   display: flex;
