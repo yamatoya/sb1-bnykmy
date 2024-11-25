@@ -1,95 +1,5 @@
 <template>
   <div class="tweet-page">
-    <!-- デバッグ情報パネル -->
-    <div class="debug-panel">
-      <div class="debug-header" @click="toggleDebug">
-        <i class="fas fa-bug"></i> デバッグ情報
-        <span class="toggle-icon">{{ showDebug ? '▼' : '▶' }}</span>
-      </div>
-      <div v-if="showDebug" class="debug-content">
-        <div class="debug-section">
-          <h4>ルート情報</h4>
-          <div class="debug-item">
-            <strong>Raw URL:</strong>
-            <pre>{{ window.location.href }}</pre>
-          </div>
-          <div class="debug-item">
-            <strong>Raw Path:</strong>
-            <pre>{{ window.location.pathname }}</pre>
-          </div>
-          <div class="debug-item">
-            <strong>Raw Query:</strong>
-            <pre>{{ window.location.search }}</pre>
-          </div>
-          <div class="debug-item">
-            <strong>Route Path:</strong>
-            <pre>{{ $route.path }}</pre>
-          </div>
-          <div class="debug-item">
-            <strong>Route Full Path:</strong>
-            <pre>{{ $route.fullPath }}</pre>
-          </div>
-          <div class="debug-item">
-            <strong>Route Name:</strong>
-            <pre>{{ $route.name }}</pre>
-          </div>
-        </div>
-
-        <div class="debug-section">
-          <h4>パラメータ</h4>
-          <div class="debug-item">
-            <strong>Route Params:</strong>
-            <pre>{{ JSON.stringify($route.params, null, 2) }}</pre>
-          </div>
-          <div class="debug-item">
-            <strong>Query Params:</strong>
-            <pre>{{ JSON.stringify($route.query, null, 2) }}</pre>
-          </div>
-          <div class="debug-item">
-            <strong>Hash:</strong>
-            <pre>{{ $route.hash }}</pre>
-          </div>
-        </div>
-
-        <div class="debug-section">
-          <h4>データ状態</h4>
-          <div class="debug-item">
-            <strong>Document ID:</strong>
-            <pre>{{ $route.params.documentId }}</pre>
-          </div>
-          <div class="debug-item">
-            <strong>Tweet ID:</strong>
-            <pre>{{ $route.params.tweetId }}</pre>
-          </div>
-          <div class="debug-item">
-            <strong>Document Data:</strong>
-            <pre>{{ JSON.stringify(document, null, 2) }}</pre>
-          </div>
-          <div class="debug-item">
-            <strong>Tweet Data:</strong>
-            <pre>{{ JSON.stringify(tweet, null, 2) }}</pre>
-          </div>
-          <div class="debug-item">
-            <strong>Back URL:</strong>
-            <pre>{{ backUrl }}</pre>
-          </div>
-          <div class="debug-item">
-            <strong>Current URL:</strong>
-            <pre>{{ currentUrl }}</pre>
-          </div>
-        </div>
-
-        <div class="debug-section">
-          <h4>LocalStorage</h4>
-          <div class="debug-item">
-            <strong>Stored Documents:</strong>
-            <pre>{{ debugStoredDocuments }}</pre>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- メインコンテンツ -->
     <div v-if="document" class="tweet-container">
       <div class="tweet-profile-header">
         <router-link :to="backUrl" class="tweet-back-link">←</router-link>
@@ -101,7 +11,29 @@
           <span class="index">{{ tweet.index }}</span>
           <span class="document-title">{{ document.displayName }}</span>
         </div>
-        <p class="tweet-content" v-html="highlightedContent"></p>
+
+        <!-- パブリックコメントの場合 -->
+        <div v-if="document.public_comment" class="qa-content">
+          <div class="question">
+            <div class="qa-label">
+              <i class="fas fa-question-circle"></i>
+              質問
+            </div>
+            <p class="tweet-content" v-html="tweet.question"></p>
+          </div>
+          <div class="answer">
+            <div class="qa-label">
+              <i class="fas fa-comment-dots"></i>
+              回答
+            </div>
+            <p class="tweet-content" v-html="tweet.answer"></p>
+          </div>
+        </div>
+
+        <!-- 通常のツイートの場合 -->
+        <template v-else>
+          <p class="tweet-content" v-html="highlightedContent"></p>
+        </template>
         
         <div class="tweet-actions">
           <button class="copy-url-btn" @click="copyUrl">
@@ -160,52 +92,6 @@
     <div v-else class="error-message">
       指定された文書が見つかりません。
     </div>
-
-    <!-- 改訂選択モーダル -->
-    <div v-if="showRevisionSelector" class="modal-overlay" @click="showRevisionSelector = false">
-      <div class="modal-content" @click.stop>
-        <div class="modal-header">
-          <h2>改訂履歴の選択</h2>
-          <button class="close-button" @click="showRevisionSelector = false">&times;</button>
-        </div>
-        <div class="modal-body">
-          <div v-for="revision in document.revisions" :key="revision.id" class="revision-selector-item">
-            <h3>{{ revision.title }} ({{ formatDate(revision.date) }})</h3>
-            <div v-if="revision.description" class="revision-description">
-              {{ revision.description }}
-            </div>
-            <div class="articles-list">
-              <div v-for="article in revision.articles" :key="article.id" class="article-selector">
-                <label class="article-checkbox">
-                  <input 
-                    type="checkbox" 
-                    :value="`${document.accountId}/revisions/${revision.id}/${article.id}`"
-                    v-model="selectedRevisions"
-                  >
-                  <div class="article-preview">
-                    <div class="article-status" :class="article.status">{{ article.status }}</div>
-                    <div class="article-content">
-                      <div v-if="article.before" class="before-preview">
-                        改正前: {{ truncateText(article.before) }}
-                      </div>
-                      <div v-if="article.after" class="after-preview">
-                        改正後: {{ truncateText(article.after) }}
-                      </div>
-                    </div>
-                  </div>
-                </label>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="cancel-button" @click="showRevisionSelector = false">キャンセル</button>
-          <button class="save-button" @click="saveRevisionLinks" :disabled="selectedRevisions.length === 0">
-            選択した改訂を追加
-          </button>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -227,21 +113,11 @@ export default {
     const router = useRouter()
     const document = ref(null)
     const tweet = ref(null)
-    const showDebug = ref(false)
     const showRevisionSelector = ref(false)
     const selectedRevisions = ref([])
 
     const currentUrl = computed(() => `/document/${route.params.documentId}/${route.params.tweetId}`)
     const backUrl = computed(() => route.query.back || `/document/${route.params.documentId}`)
-
-    const debugStoredDocuments = computed(() => {
-      try {
-        const stored = localStorage.getItem(STORAGE_KEY)
-        return JSON.stringify(JSON.parse(stored), null, 2)
-      } catch (e) {
-        return `Error parsing stored documents: ${e.message}`
-      }
-    })
 
     const highlightedContent = computed(() => {
       if (!tweet.value?.content) return ''
@@ -255,12 +131,6 @@ export default {
       }
       return content
     })
-
-    const toggleDebug = () => {
-      showDebug.value = !showDebug.value
-      console.log('Current route:', route)
-      console.log('Window location:', window.location)
-    }
 
     const getPathParts = (path) => {
       const parts = path.split('/')
@@ -291,20 +161,6 @@ export default {
       if (!revision || !revision.articles) return []
 
       return revision.articles.filter(article => article.id === parts.articleId)
-    }
-
-    const formatDate = (dateString) => {
-      return new Date(dateString).toLocaleDateString('ja-JP', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit'
-      })
-    }
-
-    const truncateText = (text, maxLength = 50) => {
-      if (!text) return ''
-      if (text.length <= maxLength) return text
-      return text.substring(0, maxLength) + '...'
     }
 
     const copyUrl = () => {
@@ -345,7 +201,6 @@ export default {
             currentTweet.revision = selectedRevisions.value
             localStorage.setItem(STORAGE_KEY, JSON.stringify(documents))
             
-            // 状態を更新
             document.value = doc
             tweet.value = currentTweet
             showRevisionSelector.value = false
@@ -358,32 +213,30 @@ export default {
     }
 
     const loadData = () => {
-      console.log('Loading data for:', route.params)
       const storedData = localStorage.getItem(STORAGE_KEY)
       if (storedData) {
         try {
           const documents = JSON.parse(storedData)
           document.value = documents[route.params.documentId]
           if (document.value) {
-            tweet.value = document.value.tweets.find(t => t.id === route.params.tweetId)
+            if (document.value.public_comment) {
+              // パブリックコメントの場合
+              tweet.value = document.value.questions.find(q => q.id === route.params.tweetId)
+            } else {
+              // 通常のツイートの場合
+              tweet.value = document.value.tweets.find(t => t.id === route.params.tweetId)
+            }
             if (tweet.value?.revision) {
               selectedRevisions.value = tweet.value.revision
             }
           }
-          console.log('Loaded document:', document.value)
-          console.log('Loaded tweet:', tweet.value)
         } catch (e) {
           console.error('Failed to load documents:', e)
         }
       }
     }
 
-    // ルートパラメータが変更されたときにデータを再読み込み
-    watch(() => route.params, (newParams, oldParams) => {
-      console.log('Route params changed:', {
-        new: newParams,
-        old: oldParams
-      })
+    watch(() => route.params, () => {
       loadData()
     }, { immediate: true })
 
@@ -395,59 +248,21 @@ export default {
       highlightedContent,
       showRevisionSelector,
       selectedRevisions,
-      showDebug,
-      toggleDebug,
-      debugStoredDocuments,
       getRevisionContent,
       getRevisionArticles,
-      formatDate,
-      truncateText,
       copyUrl,
       saveRevisionLinks,
-      highlightChanges,
-      window: computed(() => window)
+      highlightChanges
     }
   }
 }
 </script>
 
-<style>
+<style scoped>
 .tweet-page {
   min-height: 100vh;
   background-color: #f7f9fa;
   padding: 20px;
-}
-
-.debug-panel {
-  background: white;
-  border: 1px solid #e1e8ed;
-  border-radius: 8px;
-  margin-bottom: 20px;
-}
-
-.debug-header {
-  padding: 12px;
-  background-color: #f8f9fa;
-  border-bottom: 1px solid #e1e8ed;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: bold;
-  color: #1da1f2;
-}
-
-.debug-content {
-  padding: 16px;
-}
-
-.error-message {
-  text-align: center;
-  padding: 40px;
-  background: white;
-  border-radius: 8px;
-  color: #e0245e;
-  font-weight: bold;
 }
 
 .tweet-container {
@@ -464,6 +279,11 @@ export default {
   padding: 20px;
   position: relative;
   text-align: center;
+}
+
+.tweet-profile-header h1 {
+  margin: 0;
+  font-size: 24px;
 }
 
 .tweet-back-link {
@@ -618,6 +438,13 @@ export default {
   border-radius: 4px;
 }
 
+.error-message {
+  text-align: center;
+  padding: 40px;
+  color: #e0245e;
+  font-weight: bold;
+}
+
 .highlight {
   color: #1da1f2;
   font-weight: bold;
@@ -630,163 +457,70 @@ export default {
   text-decoration-thickness: 2px;
 }
 
-/* モーダル関連のスタイル */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-.modal-content {
-  background-color: white;
-  border-radius: 12px;
-  width: 90%;
-  max-width: 800px;
-  max-height: 90vh;
-  overflow-y: auto;
-}
-
-.modal-header {
-  padding: 20px;
-  border-bottom: 1px solid #e1e8ed;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  position: sticky;
-  top: 0;
-  background: white;
-  z-index: 1;
-}
-
-.modal-header h2 {
-  margin: 0;
-  font-size: 1.5em;
-}
-
-.close-button {
-  background: none;
-  border: none;
-  font-size: 1.5em;
-  cursor: pointer;
-  color: #657786;
-}
-
-.modal-body {
-  padding: 20px;
-}
-
-.modal-footer {
-  padding: 20px;
-  border-top: 1px solid #e1e8ed;
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  position: sticky;
-  bottom: 0;
-  background: white;
-}
-
-.revision-selector-item {
-  margin-bottom: 30px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid #e1e8ed;
-}
-
-.revision-selector-item:last-child {
-  border-bottom: none;
-  margin-bottom: 0;
-  padding-bottom: 0;
-}
-
-.revision-selector-item h3 {
-  margin: 0 0 10px 0;
-  color: #14171a;
-}
-
-.articles-list {
-  margin-top: 15px;
-}
-
-.article-selector {
-  margin-bottom: 10px;
-}
-
-.article-checkbox {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  cursor: pointer;
-}
-
-.article-checkbox input {
-  margin-top: 4px;
-}
-
-.article-preview {
-  flex-grow: 1;
-  background: #f8f9fa;
-  border: 1px solid #e1e8ed;
+/* QAコンテンツのスタイル */
+.qa-content {
+  background-color: #ffffff;
   border-radius: 8px;
-  padding: 12px;
+  overflow: hidden;
 }
 
-.before-preview,
-.after-preview {
-  margin-top: 8px;
+.question {
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e1e8ed;
+  padding: 20px;
+}
+
+.answer {
+  background-color: #ffffff;
+  padding: 20px;
+}
+
+.qa-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
   font-size: 14px;
-  color: #657786;
+  padding: 4px 12px;
+  border-radius: 16px;
+  margin-bottom: 12px;
 }
 
-.save-button,
-.cancel-button {
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.save-button {
-  background-color: #1da1f2;
-  color: white;
-  border: none;
-}
-
-.save-button:disabled {
-  background-color: #a5d0f5;
-  cursor: not-allowed;
-}
-
-.cancel-button {
-  background-color: white;
+.question .qa-label {
+  background-color: #e8f5fd;
   color: #1da1f2;
-  border: 1px solid #1da1f2;
+}
+
+.answer .qa-label {
+  background-color: #f3f4f6;
+  color: #4b5563;
+}
+
+.qa-label i {
+  font-size: 16px;
 }
 
 @media (max-width: 768px) {
-  .comparison-container {
-    grid-template-columns: 1fr;
-    gap: 10px;
+  .tweet-page {
+    padding: 10px;
   }
 
   .tweet-profile-header {
     padding: 15px;
   }
 
+  .tweet-profile-header h1 {
+    font-size: 20px;
+    margin: 0 30px;
+  }
+
   .tweet {
     padding: 15px;
   }
 
-  .modal-content {
-    width: 95%;
-    height: 95vh;
-    border-radius: 8px;
+  .comparison-container {
+    grid-template-columns: 1fr;
+    gap: 10px;
   }
 
   .tweet-actions {
@@ -797,6 +531,11 @@ export default {
   .add-revision-link-btn {
     flex: 1;
     justify-content: center;
+  }
+
+  .question,
+  .answer {
+    padding: 15px;
   }
 }
 </style>
