@@ -12,13 +12,19 @@
       <form @submit.prevent="savePublicComment" class="editor-form">
         <div class="form-group">
           <label>文書名</label>
-          <input 
-            type="text" 
-            v-model="displayName" 
-            class="form-control" 
-            placeholder="例: 暗号資産関連法令に関するパブリックコメント"
-            required
-          />
+          <div class="input-group">
+            <input 
+              type="text" 
+              v-model="displayName" 
+              class="form-control" 
+              placeholder="例: 暗号資産関連法令に関するパブリックコメント"
+              required
+            />
+            <button type="button" class="format-button" @click="formatText('displayName')">
+              <i class="fas fa-magic"></i>
+              フォーマット
+            </button>
+          </div>
         </div>
 
         <div class="form-group">
@@ -55,22 +61,34 @@
             <div class="question-content">
               <div class="form-group">
                 <label>質問内容</label>
-                <textarea 
-                  v-model="question.question" 
-                  class="form-control" 
-                  rows="4"
-                  required
-                ></textarea>
+                <div class="input-group">
+                  <textarea 
+                    v-model="question.question" 
+                    class="form-control" 
+                    rows="4"
+                    required
+                  ></textarea>
+                  <button type="button" class="format-button" @click="formatQuestionText(index, 'question')">
+                    <i class="fas fa-magic"></i>
+                    フォーマット
+                  </button>
+                </div>
               </div>
 
               <div class="form-group">
                 <label>回答内容</label>
-                <textarea 
-                  v-model="question.answer" 
-                  class="form-control" 
-                  rows="4"
-                  required
-                ></textarea>
+                <div class="input-group">
+                  <textarea 
+                    v-model="question.answer" 
+                    class="form-control" 
+                    rows="4"
+                    required
+                  ></textarea>
+                  <button type="button" class="format-button" @click="formatQuestionText(index, 'answer')">
+                    <i class="fas fa-magic"></i>
+                    フォーマット
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -109,6 +127,18 @@ export default {
              questions.value.length > 0 &&
              questions.value.every(q => q.question && q.answer)
     })
+
+    const formatText = (field) => {
+      if (field === 'displayName') {
+        displayName.value = displayName.value.replace(/\n/g, '')
+      }
+    }
+
+    const formatQuestionText = (index, field) => {
+      if (questions.value[index]) {
+        questions.value[index][field] = questions.value[index][field].replace(/\n/g, '')
+      }
+    }
 
     const addQuestion = () => {
       questions.value.push({
@@ -183,6 +213,8 @@ export default {
       questions,
       isValid,
       isEditing,
+      formatText,
+      formatQuestionText,
       addQuestion,
       removeQuestion,
       savePublicComment
@@ -249,6 +281,13 @@ h1 {
   color: #14171a;
 }
 
+.input-group {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .form-control {
   width: 100%;
   padding: 12px;
@@ -267,6 +306,29 @@ h1 {
 textarea.form-control {
   resize: vertical;
   min-height: 100px;
+}
+
+.format-button {
+  align-self: flex-end;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background-color: #e8f5fd;
+  color: #1da1f2;
+  border: none;
+  border-radius: 16px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.format-button:hover {
+  background-color: #d8effd;
+}
+
+.format-button i {
+  font-size: 12px;
 }
 
 .questions-section {
