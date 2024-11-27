@@ -92,6 +92,14 @@
     <div v-else class="error-message">
       指定された文書が見つかりません。
     </div>
+
+    <revision-selector
+      v-if="showRevisionSelector"
+      :document="document"
+      :initial-selections="tweet.revision || []"
+      @save="saveRevisionLinks"
+      @close="showRevisionSelector = false"
+    />
   </div>
 </template>
 
@@ -99,6 +107,7 @@
 import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import TweetLinks from './TweetLinks.vue'
+import RevisionSelector from './RevisionSelector.vue'
 import { diffChars } from 'diff'
 
 const STORAGE_KEY = 'legal-documents-data'
@@ -106,7 +115,8 @@ const STORAGE_KEY = 'legal-documents-data'
 export default {
   name: 'Tweet',
   components: {
-    TweetLinks
+    TweetLinks,
+    RevisionSelector
   },
   setup() {
     const route = useRoute()
@@ -114,7 +124,6 @@ export default {
     const document = ref(null)
     const tweet = ref(null)
     const showRevisionSelector = ref(false)
-    const selectedRevisions = ref([])
 
     const currentUrl = computed(() => `/document/${route.params.documentId}/${route.params.tweetId}`)
     const backUrl = computed(() => route.query.back || `/document/${route.params.documentId}`)
@@ -189,7 +198,7 @@ export default {
       return result
     }
 
-    const saveRevisionLinks = () => {
+    const saveRevisionLinks = (selectedRevisions) => {
       const storedData = localStorage.getItem(STORAGE_KEY)
       if (storedData) {
         try {
@@ -198,13 +207,11 @@ export default {
           const currentTweet = doc.tweets.find(t => t.id === route.params.tweetId)
           
           if (currentTweet) {
-            currentTweet.revision = selectedRevisions.value
+            currentTweet.revision = selectedRevisions
             localStorage.setItem(STORAGE_KEY, JSON.stringify(documents))
             
             document.value = doc
             tweet.value = currentTweet
-            showRevisionSelector.value = false
-            selectedRevisions.value = []
           }
         } catch (e) {
           console.error('Failed to save revision links:', e)
@@ -226,9 +233,6 @@ export default {
               // 通常のツイートの場合
               tweet.value = document.value.tweets.find(t => t.id === route.params.tweetId)
             }
-            if (tweet.value?.revision) {
-              selectedRevisions.value = tweet.value.revision
-            }
           }
         } catch (e) {
           console.error('Failed to load documents:', e)
@@ -247,7 +251,6 @@ export default {
       backUrl,
       highlightedContent,
       showRevisionSelector,
-      selectedRevisions,
       getRevisionContent,
       getRevisionArticles,
       copyUrl,
