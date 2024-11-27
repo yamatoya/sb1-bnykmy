@@ -94,12 +94,21 @@
           </div>
         </div>
 
+        <div class="pre-action-buttons">
+          <button type="button" class="add-question-button" @click="addQuestion">
+            <i class="fas fa-plus"></i>
+            質問を追加
+          </button>
+        </div>
+
         <div class="form-actions">
           <router-link to="/" class="cancel-button">キャンセル</router-link>
           <button type="submit" class="save-button" :disabled="!isValid">保存</button>
         </div>
       </form>
     </main>
+
+    <ScrollToTop />
   </div>
 </template>
 
@@ -107,11 +116,15 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { v4 as uuidv4 } from 'uuid'
+import ScrollToTop from './ScrollToTop.vue'
 
 const STORAGE_KEY = 'legal-documents-data'
 
 export default {
   name: 'PublicCommentEditor',
+  components: {
+    ScrollToTop
+  },
   setup() {
     const route = useRoute()
     const router = useRouter()
@@ -416,6 +429,32 @@ textarea.form-control {
   padding: 16px;
 }
 
+.pre-action-buttons {
+  margin: 32px 0;
+  display: flex;
+  justify-content: center;
+}
+
+.add-question-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background-color: #1da1f2;
+  color: white;
+  border: none;
+  border-radius: 24px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  box-shadow: 0 2px 4px rgba(29, 161, 242, 0.2);
+}
+
+.add-question-button:hover {
+  background-color: #1991db;
+  box-shadow: 0 4px 8px rgba(29, 161, 242, 0.3);
+}
+
 .form-actions {
   margin-top: 40px;
   display: flex;
@@ -474,6 +513,16 @@ textarea.form-control {
     padding: 16px;
   }
 
+  .article-header {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .article-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
   .form-actions {
     flex-direction: column-reverse;
     gap: 12px;
@@ -482,6 +531,11 @@ textarea.form-control {
   .save-button,
   .cancel-button {
     width: 100%;
+  }
+
+  .add-question-button {
+    width: 100%;
+    justify-content: center;
   }
 }
 </style>
