@@ -55,6 +55,10 @@
                 <div v-else class="no-content">改正後の内容なし</div>
               </div>
             </div>
+            <div v-if="article.status === '改正'" class="diff-view">
+              <h4>変更内容</h4>
+              <div class="diff-content" v-html="formatTextDiff(article.before, article.after)"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -68,6 +72,7 @@
 <script>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { formatTextDiff } from '../utils/textDiffUtils'
 
 const STORAGE_KEY = 'legal-documents-data'
 
@@ -141,7 +146,8 @@ export default {
       publicComments,
       formatDisplayName,
       formatDate,
-      formatText
+      formatText,
+      formatTextDiff
     }
   }
 }
@@ -343,6 +349,46 @@ h1 {
   background-color: #ffffff;
   border-radius: 4px;
   font-size: 14px;
+}
+
+.diff-view {
+  margin-top: 20px;
+  background-color: #ffffff;
+  border: 1px solid #e1e8ed;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.diff-view h4 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: #657786;
+}
+
+.diff-content {
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.6;
+  font-size: 14px;
+  background-color: #f8f9fa;
+  padding: 12px;
+  border-radius: 4px;
+}
+
+:deep(.diff-added) {
+  background-color: #e6ffed;
+  color: #28a745;
+  text-decoration: underline;
+  text-decoration-color: #28a745;
+  text-decoration-thickness: 2px;
+}
+
+:deep(.diff-removed) {
+  background-color: #ffeef0;
+  color: #d73a49;
+  text-decoration: line-through;
+  text-decoration-color: #d73a49;
+  text-decoration-thickness: 2px;
 }
 
 .no-revision {
