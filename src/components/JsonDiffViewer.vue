@@ -17,10 +17,12 @@
               <div class="diff-path">{{ diff.path }}</div>
               <div class="diff-comparison">
                 <div class="diff-side bundled">
-                  <pre v-html="highlightDifferences(diff.bundled, diff.local, 'bundled')"></pre>
+                  <pre v-if="diff.bundled !== null">{{ formatValue(diff.bundled) }}</pre>
+                  <div v-else class="no-content">データなし</div>
                 </div>
                 <div class="diff-side local">
-                  <pre v-html="highlightDifferences(diff.local, diff.bundled, 'local')"></pre>
+                  <pre v-if="diff.local !== null">{{ formatValue(diff.local) }}</pre>
+                  <div v-else class="no-content">データなし</div>
                 </div>
               </div>
             </div>
@@ -36,7 +38,6 @@
 
 <script>
 import bundledData from '../documents.json'
-import { diffLines } from 'diff'
 
 export default {
   name: 'JsonDiffViewer',
@@ -92,72 +93,41 @@ export default {
         const bundledValue = bundled[key]
         const localValue = local[key]
 
-        if (typeof bundledValue === 'object' && bundledValue !== null &&
-            typeof localValue === 'object' && localValue !== null) {
-          // 再帰的に比較
-          const nestedDiffs = this.findDifferences(bundledValue, localValue, currentPath)
-          differences.push(...nestedDiffs)
-        } else if (!this.areEqual(bundledValue, localValue)) {
-          // コンテキスト付きで差分を取得
-          differences.push({
-            path: currentPath,
-            bundled: this.formatValue(bundledValue),
-            local: this.formatValue(localValue)
-          })
+        if (!this.areEqual(bundledValue, localValue)) {
+          if (typeof bundledValue === 'object' && bundledValue !== null &&
+              typeof localValue === 'object' && localValue !== null) {
+            // 再帰的に比較
+            differences.push(...this.findDifferences(bundledValue, localValue, currentPath))
+          } else {
+            // 値が異なる場合
+            differences.push({
+              path: currentPath,
+              bundled: bundledValue,
+              local: localValue
+            })
+          }
         }
       }
 
       return differences
     },
     formatValue(value) {
+      if (value === undefined) return 'undefined'
+      if (value === null) return 'null'
+      if (typeof value === 'string') return `"${value}"`
       return JSON.stringify(value, null, 2)
     },
     areEqual(a, b) {
       if (a === b) return true
-      if (typeof a !== typeof b) return false
       if (a === null || b === null) return a === b
+      if (typeof a !== typeof b) return false
       if (typeof a === 'object') {
-        return JSON.stringify(a) === JSON.stringify(b)
+        const aKeys = Object.keys(a)
+        const bKeys = Object.keys(b)
+        if (aKeys.length !== bKeys.length) return false
+        return aKeys.every(key => this.areEqual(a[key], b[key]))
       }
-      return a === b
-    },
-    highlightDifferences(text1, text2, side) {
-      if (!text1 || !text2) {
-        return this.highlightJson(text1 || '')
-      }
-
-      const changes = diffLines(text1, text2)
-      let html = ''
-
-      changes.forEach(change => {
-        const content = this.highlightJson(change.value)
-        if (change.added && side === 'local') {
-          html += `<div class="diff-line diff-added">${content}</div>`
-        } else if (change.removed && side === 'bundled') {
-          html += `<div class="diff-line diff-removed">${content}</div>`
-        } else if (!change.added && !change.removed) {
-          html += `<div class="diff-line">${content}</div>`
-        }
-      })
-
-      return html
-    },
-    highlightJson(json) {
-      if (!json) return ''
-      return json.replace(
-        /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
-        (match) => {
-          let cls = 'json-number'
-          if (/^"/.test(match)) {
-            cls = /:$/.test(match) ? 'json-key' : 'json-string'
-          } else if (/true|false/.test(match)) {
-            cls = 'json-boolean'
-          } else if (/null/.test(match)) {
-            cls = 'json-null'
-          }
-          return `<span class="${cls}">${match}</span>`
-        }
-      )
+      return false
     }
   }
 }
@@ -270,28 +240,21 @@ export default {
   background-color: #f8f9fa;
   border-radius: 4px;
   overflow-x: auto;
-  font-family: monospace;
 }
 
 .diff-side pre {
   margin: 0;
   white-space: pre-wrap;
   word-wrap: break-word;
+  font-family: monospace;
+  font-size: 14px;
+  line-height: 1.4;
 }
 
-.diff-line {
-  padding: 2px 4px;
-  border-radius: 2px;
-}
-
-.diff-added {
-  background-color: #e6ffed;
-  border-left: 2px solid #28a745;
-}
-
-.diff-removed {
-  background-color: #ffeef0;
-  border-left: 2px solid #d73a49;
+.no-content {
+  color: #657786;
+  font-style: italic;
+  padding: 10px;
 }
 
 .no-diff {
@@ -299,26 +262,6 @@ export default {
   padding: 40px;
   color: #657786;
   font-size: 1.2em;
-}
-
-:deep(.json-string) {
-  color: #22863a;
-}
-
-:deep(.json-number) {
-  color: #005cc5;
-}
-
-:deep(.json-boolean) {
-  color: #e36209;
-}
-
-:deep(.json-null) {
-  color: #d73a49;
-}
-
-:deep(.json-key) {
-  color: #005cc5;
 }
 
 @media (max-width: 768px) {
@@ -341,6 +284,11 @@ export default {
     height: 100%;
     max-height: 100vh;
     border-radius: 0;
+  }
+
+  .diff-side {
+    max-height: 300px;
+    overflow-y: auto;
   }
 }
 </style>
