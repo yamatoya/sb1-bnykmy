@@ -16,12 +16,12 @@
             <div v-for="(diff, index) in differences" :key="index" class="diff-section">
               <div class="diff-path">{{ diff.path }}</div>
               <div class="diff-comparison">
-                <div class="diff-side bundled">
-                  <pre v-if="diff.bundled !== null">{{ formatValue(diff.bundled) }}</pre>
+                <div class="diff-side bundled" :class="{ 'has-diff': isDifferent(diff.bundled, diff.local) }">
+                  <pre v-if="diff.bundled !== null" v-html="highlightValue(diff.bundled, diff.local)"></pre>
                   <div v-else class="no-content">データなし</div>
                 </div>
-                <div class="diff-side local">
-                  <pre v-if="diff.local !== null">{{ formatValue(diff.local) }}</pre>
+                <div class="diff-side local" :class="{ 'has-diff': isDifferent(diff.local, diff.bundled) }">
+                  <pre v-if="diff.local !== null" v-html="highlightValue(diff.local, diff.bundled)"></pre>
                   <div v-else class="no-content">データなし</div>
                 </div>
               </div>
@@ -38,6 +38,7 @@
 
 <script>
 import bundledData from '../documents.json'
+import { diffWords } from 'diff'
 
 export default {
   name: 'JsonDiffViewer',
@@ -55,13 +56,9 @@ export default {
   methods: {
     async loadData() {
       try {
-        // バンドルされたJSONを読み込む
         this.bundledJson = bundledData
-
-        // LocalStorageからJSONを読み込む
         const localData = localStorage.getItem('legal-documents-data')
         this.localJson = localData ? JSON.parse(localData) : {}
-
         this.compareDocuments()
       } catch (e) {
         console.error('Failed to load documents:', e)
@@ -96,10 +93,8 @@ export default {
         if (!this.areEqual(bundledValue, localValue)) {
           if (typeof bundledValue === 'object' && bundledValue !== null &&
               typeof localValue === 'object' && localValue !== null) {
-            // 再帰的に比較
             differences.push(...this.findDifferences(bundledValue, localValue, currentPath))
           } else {
-            // 値が異なる場合
             differences.push({
               path: currentPath,
               bundled: bundledValue,
@@ -116,6 +111,39 @@ export default {
       if (value === null) return 'null'
       if (typeof value === 'string') return `"${value}"`
       return JSON.stringify(value, null, 2)
+    },
+    isDifferent(value1, value2) {
+      return !this.areEqual(value1, value2)
+    },
+    highlightValue(value1, value2) {
+      const str1 = this.formatValue(value1)
+      const str2 = this.formatValue(value2)
+      
+      if (typeof value1 !== typeof value2) {
+        return `<span class="diff-all">${this.escapeHtml(str1)}</span>`
+      }
+
+      if (typeof value1 === 'object' || typeof value2 === 'object') {
+        return this.escapeHtml(str1)
+      }
+
+      const diff = diffWords(str2, str1)
+      return diff.map(part => {
+        if (part.added) {
+          return `<span class="diff-added">${this.escapeHtml(part.value)}</span>`
+        } else if (part.removed) {
+          return `<span class="diff-removed">${this.escapeHtml(part.value)}</span>`
+        }
+        return this.escapeHtml(part.value)
+      }).join('')
+    },
+    escapeHtml(unsafe) {
+      return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;")
     },
     areEqual(a, b) {
       if (a === b) return true
@@ -240,6 +268,11 @@ export default {
   background-color: #f8f9fa;
   border-radius: 4px;
   overflow-x: auto;
+  transition: background-color 0.2s ease;
+}
+
+.diff-side.has-diff {
+  background-color: #fff8f8;
 }
 
 .diff-side pre {
@@ -249,6 +282,21 @@ export default {
   font-family: monospace;
   font-size: 14px;
   line-height: 1.4;
+}
+
+.diff-added {
+  background-color: #e6ffed;
+  border-radius: 2px;
+}
+
+.diff-removed {
+  background-color: #ffeef0;
+  border-radius: 2px;
+}
+
+.diff-all {
+  background-color: #fff3cd;
+  border-radius: 2px;
 }
 
 .no-content {
