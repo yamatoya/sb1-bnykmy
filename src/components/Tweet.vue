@@ -19,14 +19,14 @@
               <i class="fas fa-question-circle"></i>
               質問
             </div>
-            <p class="tweet-content" v-html="tweet.question"></p>
+            <p class="tweet-content" v-html="formatText(tweet.question)"></p>
           </div>
           <div class="answer">
             <div class="qa-label">
               <i class="fas fa-comment-dots"></i>
               回答
             </div>
-            <p class="tweet-content" v-html="tweet.answer"></p>
+            <p class="tweet-content" v-html="formatText(tweet.answer)"></p>
           </div>
         </div>
 
@@ -57,9 +57,17 @@
                   <span class="document-name">{{ formatDisplayName(getRelatedTweetDocument(relatedTweet)?.displayName) }}</span>
                   <span class="tweet-index">{{ getRelatedTweetContent(relatedTweet)?.index }}</span>
                 </div>
-                <div class="tweet-text">
-                  {{ getRelatedTweetContent(relatedTweet)?.content }}
+                <div v-if="isPublicComment(getRelatedTweetDocument(relatedTweet))" class="tweet-text">
+                  <div class="related-question">
+                    <strong>質問:</strong>
+                    <div v-html="formatText(getRelatedTweetContent(relatedTweet)?.question)"></div>
+                  </div>
+                  <div class="related-answer">
+                    <strong>回答:</strong>
+                    <div v-html="formatText(getRelatedTweetContent(relatedTweet)?.answer)"></div>
+                  </div>
                 </div>
+                <div v-else class="tweet-text" v-html="formatText(getRelatedTweetContent(relatedTweet)?.content)"></div>
               </div>
             </div>
           </div>
@@ -127,7 +135,7 @@
     <revision-selector
       v-if="showRevisionSelector"
       :document="document"
-      :initial-selections="tweet.revision || []"
+      :initial-selections="tweet?.revision || []"
       @save="saveRevisionLinks"
       @close="showRevisionSelector = false"
     />
@@ -141,7 +149,7 @@ import TweetLinks from './TweetLinks.vue'
 import RevisionSelector from './RevisionSelector.vue'
 import TweetSelector from './TweetSelector.vue'
 import { diffChars } from 'diff'
-import { formatDisplayName } from '../utils/formatters'
+import { formatDisplayName, formatText } from '../utils/formatters'
 
 const STORAGE_KEY = 'legal-documents-data'
 
@@ -224,6 +232,10 @@ export default {
       return doc.tweets.find(t => t.id === tweetId)
     }
 
+    const isPublicComment = (doc) => {
+      return doc?.public_comment === true
+    }
+
     const copyUrl = () => {
       const url = window.location.href
       navigator.clipboard.writeText(url).then(() => {
@@ -263,6 +275,7 @@ export default {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(docs))
             
             document.value = doc
+            documents.value = docs
             tweet.value = currentTweet
           }
         } catch (e) {
@@ -331,11 +344,13 @@ export default {
       getRevisionArticles,
       getRelatedTweetDocument,
       getRelatedTweetContent,
+      isPublicComment,
       copyUrl,
       saveRevisionLinks,
       saveRelatedTweets,
       highlightChanges,
-      formatDisplayName
+      formatDisplayName,
+      formatText
     }
   }
 }
@@ -468,6 +483,22 @@ export default {
   white-space: pre-wrap;
   word-break: break-word;
   line-height: 1.6;
+}
+
+.related-question,
+.related-answer {
+  margin-bottom: 10px;
+}
+
+.related-answer {
+  margin-bottom: 0;
+}
+
+.related-question strong,
+.related-answer strong {
+  display: block;
+  margin-bottom: 5px;
+  color: #14171a;
 }
 
 .revision-item {
