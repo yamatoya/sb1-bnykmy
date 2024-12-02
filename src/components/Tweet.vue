@@ -3,13 +3,13 @@
     <div v-if="document" class="tweet-container">
       <div class="tweet-profile-header">
         <router-link :to="backUrl" class="tweet-back-link">←</router-link>
-        <h1>{{ document.displayName }}</h1>
+        <h1>{{ formatDisplayName(document.displayName) }}</h1>
       </div>
 
       <div v-if="tweet" class="tweet">
         <div class="tweet-header">
           <span class="index">{{ tweet.index }}</span>
-          <span class="document-title">{{ document.displayName }}</span>
+          <span class="document-title">{{ formatDisplayName(document.displayName) }}</span>
         </div>
 
         <!-- パブリックコメントの場合 -->
@@ -39,9 +39,30 @@
           <button class="copy-url-btn" @click="copyUrl">
             <i class="fas fa-link"></i> URLをコピー
           </button>
+          <button v-if="document.public_comment" class="add-related-btn" @click="showTweetSelector = true">
+            <i class="fas fa-plus"></i> 関連ツイートを追加
+          </button>
           <button v-if="document.revisions" class="add-revision-link-btn" @click="showRevisionSelector = true">
             <i class="fas fa-history"></i> 改訂履歴を追加
           </button>
+        </div>
+
+        <!-- 関連ツイート -->
+        <div v-if="tweet.relatedTweets && tweet.relatedTweets.length > 0" class="related-tweets">
+          <h3>関連ツイート:</h3>
+          <div v-for="relatedTweet in tweet.relatedTweets" :key="relatedTweet" class="related-tweet-item">
+            <div class="related-tweet-content">
+              <div v-if="getRelatedTweetContent(relatedTweet)" class="related-tweet-details">
+                <div class="related-tweet-header">
+                  <span class="document-name">{{ formatDisplayName(getRelatedTweetDocument(relatedTweet)?.displayName) }}</span>
+                  <span class="tweet-index">{{ getRelatedTweetContent(relatedTweet)?.index }}</span>
+                </div>
+                <div class="tweet-text">
+                  {{ getRelatedTweetContent(relatedTweet)?.content }}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- 関連リンク -->
@@ -93,6 +114,16 @@
       指定された文書が見つかりません。
     </div>
 
+    <tweet-selector
+      v-if="showTweetSelector"
+      :documents="documents"
+      :current-document-id="route.params.documentId"
+      :current-tweet-id="route.params.tweetId"
+      :initial-selections="tweet?.relatedTweets || []"
+      @save="saveRelatedTweets"
+      @close="showTweetSelector = false"
+    />
+
     <revision-selector
       v-if="showRevisionSelector"
       :document="document"
@@ -108,7 +139,9 @@ import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import TweetLinks from './TweetLinks.vue'
 import RevisionSelector from './RevisionSelector.vue'
+import TweetSelector from './TweetSelector.vue'
 import { diffChars } from 'diff'
+import { formatDisplayName } from '../utils/formatters'
 
 const STORAGE_KEY = 'legal-documents-data'
 
@@ -116,14 +149,17 @@ export default {
   name: 'Tweet',
   components: {
     TweetLinks,
-    RevisionSelector
+    RevisionSelector,
+    TweetSelector
   },
   setup() {
     const route = useRoute()
     const router = useRouter()
     const document = ref(null)
+    const documents = ref(null)
     const tweet = ref(null)
     const showRevisionSelector = ref(false)
+    const showTweetSelector = ref(false)
 
     const currentUrl = computed(() => `/document/${route.params.documentId}/${route.params.tweetId}`)
     const backUrl = computed(() => route.query.back || `/document/${route.params.documentId}`)
@@ -172,6 +208,22 @@ export default {
       return revision.articles.filter(article => article.id === parts.articleId)
     }
 
+    const getRelatedTweetDocument = (tweetPath) => {
+      const [documentId] = tweetPath.split('/')
+      return documents.value?.[documentId]
+    }
+
+    const getRelatedTweetContent = (tweetPath) => {
+      const [documentId, tweetId] = tweetPath.split('/')
+      const doc = documents.value?.[documentId]
+      if (!doc) return null
+
+      if (doc.public_comment) {
+        return doc.questions.find(q => q.id === tweetId)
+      }
+      return doc.tweets.find(t => t.id === tweetId)
+    }
+
     const copyUrl = () => {
       const url = window.location.href
       navigator.clipboard.writeText(url).then(() => {
@@ -202,13 +254,13 @@ export default {
       const storedData = localStorage.getItem(STORAGE_KEY)
       if (storedData) {
         try {
-          const documents = JSON.parse(storedData)
-          const doc = documents[route.params.documentId]
-          const currentTweet = doc.tweets.find(t => t.id === route.params.tweetId)
+          const docs = JSON.parse(storedData)
+          const doc = docs[route.params.documentId]
+          const currentTweet = doc.questions.find(t => t.id === route.params.tweetId)
           
           if (currentTweet) {
             currentTweet.revision = selectedRevisions
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(documents))
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(docs))
             
             document.value = doc
             tweet.value = currentTweet
@@ -219,18 +271,39 @@ export default {
       }
     }
 
+    const saveRelatedTweets = (selectedTweets) => {
+      const storedData = localStorage.getItem(STORAGE_KEY)
+      if (storedData) {
+        try {
+          const docs = JSON.parse(storedData)
+          const doc = docs[route.params.documentId]
+          const currentTweet = doc.questions.find(t => t.id === route.params.tweetId)
+          
+          if (currentTweet) {
+            currentTweet.relatedTweets = selectedTweets
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(docs))
+            
+            document.value = doc
+            documents.value = docs
+            tweet.value = currentTweet
+          }
+        } catch (e) {
+          console.error('Failed to save related tweets:', e)
+        }
+      }
+    }
+
     const loadData = () => {
       const storedData = localStorage.getItem(STORAGE_KEY)
       if (storedData) {
         try {
-          const documents = JSON.parse(storedData)
-          document.value = documents[route.params.documentId]
+          const docs = JSON.parse(storedData)
+          documents.value = docs
+          document.value = docs[route.params.documentId]
           if (document.value) {
             if (document.value.public_comment) {
-              // パブリックコメントの場合
               tweet.value = document.value.questions.find(q => q.id === route.params.tweetId)
             } else {
-              // 通常のツイートの場合
               tweet.value = document.value.tweets.find(t => t.id === route.params.tweetId)
             }
           }
@@ -245,17 +318,24 @@ export default {
     }, { immediate: true })
 
     return {
+      route,
       document,
+      documents,
       tweet,
       currentUrl,
       backUrl,
       highlightedContent,
       showRevisionSelector,
+      showTweetSelector,
       getRevisionContent,
       getRevisionArticles,
+      getRelatedTweetDocument,
+      getRelatedTweetContent,
       copyUrl,
       saveRevisionLinks,
-      highlightChanges
+      saveRelatedTweets,
+      highlightChanges,
+      formatDisplayName
     }
   }
 }
@@ -330,7 +410,8 @@ export default {
 }
 
 .copy-url-btn,
-.add-revision-link-btn {
+.add-revision-link-btn,
+.add-related-btn {
   background-color: #1da1f2;
   color: white;
   border: none;
@@ -347,11 +428,46 @@ export default {
   background-color: #17bf63;
 }
 
+.add-related-btn {
+  background-color: #794bc4;
+}
+
+.related-tweets,
 .tweet-links,
 .revision-links {
   margin-top: 20px;
   border-top: 1px solid #e1e8ed;
   padding-top: 20px;
+}
+
+.related-tweet-item {
+  background-color: #f8f9fa;
+  border: 1px solid #e1e8ed;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  padding: 15px;
+}
+
+.related-tweet-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.document-name {
+  font-weight: bold;
+  color: #14171a;
+}
+
+.tweet-index {
+  color: #657786;
+}
+
+.tweet-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.6;
 }
 
 .revision-item {
@@ -531,7 +647,8 @@ export default {
   }
 
   .copy-url-btn,
-  .add-revision-link-btn {
+  .add-revision-link-btn,
+  .add-related-btn {
     flex: 1;
     justify-content: center;
   }
