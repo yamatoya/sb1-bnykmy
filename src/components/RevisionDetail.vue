@@ -30,8 +30,8 @@
           <div class="public-comments-list">
             <router-link
               v-for="comment in publicComments"
-              :key="comment.id"
-              :to="`/document/${comment.id}`"
+              :key="comment.accountId"
+              :to="`/document/${comment.accountId}`"
               class="public-comment-link"
             >
               {{ formatDisplayName(comment.displayName) }}
@@ -73,6 +73,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { formatTextDiff } from '../utils/textDiffUtils'
+import { formatDisplayName, formatDate, formatText } from '../utils/formatters'
 
 const STORAGE_KEY = 'legal-documents-data'
 
@@ -109,23 +110,6 @@ export default {
         .map(id => documents.value[id])
         .filter(doc => doc && doc.public_comment)
     })
-
-    const formatDisplayName = (name) => {
-      return name?.replace(/<br>/gi, '') || ''
-    }
-
-    const formatDate = (dateString) => {
-      return new Date(dateString).toLocaleDateString('ja-JP', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit'
-      })
-    }
-
-    const formatText = (text) => {
-      if (!text) return ''
-      return text.replace(/\n/g, '<br>')
-    }
 
     onMounted(() => {
       const storedData = localStorage.getItem(STORAGE_KEY)
