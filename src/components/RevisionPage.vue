@@ -63,8 +63,8 @@
               <div class="public-comments-list">
                 <router-link
                   v-for="comment in getPublicComments(revision)"
-                  :key="comment.id"
-                  :to="`/document/${comment.id}`"
+                  :key="comment.accountId"
+                  :to="`/document/${comment.accountId}`"
                   class="public-comment-link"
                 >
                   {{ formatDisplayName(comment.displayName) }}
@@ -84,6 +84,7 @@
 <script>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { formatDisplayName, formatDate } from '../utils/formatters'
 
 const STORAGE_KEY = 'legal-documents-data'
 
@@ -115,18 +116,6 @@ export default {
       if (!currentDocument.value) return '改訂履歴'
       return `${formatDisplayName(currentDocument.value.displayName)} - 改訂履歴`
     })
-
-    const formatDisplayName = (name) => {
-      return name?.replace(/<br>/gi, '') || ''
-    }
-
-    const formatDate = (dateString) => {
-      return new Date(dateString).toLocaleDateString('ja-JP', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit'
-      })
-    }
 
     const addNewRevision = () => {
       router.push(`/revisions/${documentId.value}/new`)
