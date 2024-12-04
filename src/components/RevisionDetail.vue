@@ -18,6 +18,11 @@
         <div v-if="currentRevision.description" class="revision-description" v-html="formatText(currentRevision.description)">
         </div>
 
+        <revision-comments 
+          :document-id="documentId" 
+          :revision-id="revisionId"
+        />
+
         <div v-if="currentRevision.sourceUrl" class="revision-source">
           <a :href="currentRevision.sourceUrl" target="_blank" rel="noopener noreferrer">
             <i class="fas fa-external-link-alt"></i>
@@ -74,11 +79,15 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { formatTextDiff } from '../utils/textDiffUtils'
 import { formatDisplayName, formatDate, formatText } from '../utils/formatters'
+import RevisionComments from './RevisionComments.vue'
 
 const STORAGE_KEY = 'legal-documents-data'
 
 export default {
   name: 'RevisionDetail',
+  components: {
+    RevisionComments
+  },
   setup() {
     const route = useRoute()
     const router = useRouter()
@@ -123,6 +132,8 @@ export default {
     })
 
     return {
+      documentId,
+      revisionId,
       currentDocument,
       currentRevision,
       backLink,
