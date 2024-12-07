@@ -268,7 +268,9 @@ export default {
         try {
           const docs = JSON.parse(storedData)
           const doc = docs[route.params.documentId]
-          const currentTweet = doc.questions.find(t => t.id === route.params.tweetId)
+          const currentTweet = doc.public_comment ? 
+            doc.questions.find(t => t.id === route.params.tweetId) :
+            doc.tweets.find(t => t.id === route.params.tweetId)
           
           if (currentTweet) {
             currentTweet.revision = selectedRevisions
@@ -290,7 +292,9 @@ export default {
         try {
           const docs = JSON.parse(storedData)
           const doc = docs[route.params.documentId]
-          const currentTweet = doc.questions.find(t => t.id === route.params.tweetId)
+          const currentTweet = doc.public_comment ?
+            doc.questions.find(t => t.id === route.params.tweetId) :
+            doc.tweets.find(t => t.id === route.params.tweetId)
           
           if (currentTweet) {
             currentTweet.relatedTweets = selectedTweets
