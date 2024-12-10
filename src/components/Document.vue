@@ -3,57 +3,6 @@
     <div class="profile-header">
       <router-link to="/" class="back-link">←</router-link>
       <h1>{{ formatDisplayName(document.displayName) }}</h1>
-      <div class="document-actions">
-        <router-link 
-          :to="`/revisions/${$route.params.id}`" 
-          class="revision-link"
-        >
-          <i class="fas fa-history"></i>
-          {{ document.revisions ? '改訂履歴を表示' : '改訂履歴を追加' }}
-          <span v-if="document.revisions" class="revision-count">
-            ({{ document.revisions.length }}件)
-          </span>
-        </router-link>
-        <router-link
-          v-if="document.public_comment"
-          :to="`/public-comment/new?edit=${$route.params.id}`"
-          class="edit-button"
-        >
-          <i class="fas fa-edit"></i>
-          編集
-        </router-link>
-        <a v-if="document.public_comment && document.url" 
-           :href="document.url" 
-           target="_blank" 
-           rel="noopener noreferrer" 
-           class="original-doc-btn">
-          <i class="fas fa-external-link-alt"></i>
-          原文を表示
-        </a>
-      </div>
-    </div>
-
-    <div v-if="document.public_comment && linkedRevisions.length > 0" class="linked-revisions">
-      <h2>関連する改訂履歴</h2>
-      <div class="revision-links">
-        <router-link
-          v-for="revision in linkedRevisions"
-          :key="`${revision.documentId}-${revision.id}`"
-          :to="`/revisions/${revision.documentId}/${revision.id}`"
-          class="revision-link-item"
-        >
-          <div class="revision-link-header">
-            <span class="document-name">{{ formatDisplayName(revision.documentName) }}</span>
-            <span class="revision-title">{{ revision.title }}</span>
-          </div>
-          <div v-if="revision.description" class="revision-description">
-            {{ revision.description }}
-          </div>
-          <div class="revision-date">
-            {{ formatDate(revision.date) }}
-          </div>
-        </router-link>
-      </div>
     </div>
 
     <div class="search-container">
@@ -116,6 +65,7 @@
 <script>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { formatDisplayName, formatDate } from '../utils/formatters'
 
 const STORAGE_KEY = 'legal-documents-data'
 
@@ -154,58 +104,15 @@ export default {
       })
     })
 
-    const linkedRevisions = computed(() => {
-      if (!document.value?.public_comment) return []
-
-      const allRevisions = []
-      const storedData = localStorage.getItem(STORAGE_KEY)
-      if (storedData) {
-        try {
-          const documents = JSON.parse(storedData)
-          Object.entries(documents).forEach(([docId, doc]) => {
-            if (doc.revisions) {
-              doc.revisions.forEach(revision => {
-                if (revision.publicCommentLinks?.includes(route.params.id)) {
-                  allRevisions.push({
-                    documentId: docId,
-                    documentName: doc.displayName,
-                    ...revision
-                  })
-                }
-              })
-            }
-          })
-        } catch (e) {
-          console.error('Failed to parse stored documents:', e)
-        }
-      }
-
-      return allRevisions.sort((a, b) => new Date(b.date) - new Date(a.date))
-    })
-
-    const formatDisplayName = (name) => {
-      return name?.replace(/<br>/gi, '') || ''
-    }
-
-    const formatDate = (dateString) => {
-      return new Date(dateString).toLocaleDateString('ja-JP', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit'
-      })
-    }
-
     const highlightContent = (text) => {
-      if (!text) return ''
-      let content = text.replace(/<br>/gi, '\n')
+      if (!text || !searchQuery.value) return text
+      let content = text
       
-      if (searchQuery.value) {
-        const searchTerms = searchQuery.value.toLowerCase().split(' ').filter(term => term.length > 0)
-        searchTerms.forEach(term => {
-          const regex = new RegExp(`(${term})`, 'gi')
-          content = content.replace(regex, '<span class="highlight">$1</span>')
-        })
-      }
+      const searchTerms = searchQuery.value.toLowerCase().split(' ').filter(term => term.length > 0)
+      searchTerms.forEach(term => {
+        const regex = new RegExp(`(${term})`, 'gi')
+        content = content.replace(regex, '<span class="highlight">$1</span>')
+      })
       
       return content
     }
@@ -217,7 +124,10 @@ export default {
     const goToItem = (itemId) => {
       router.push({
         path: `/document/${route.params.id}/${itemId}`,
-        query: { back: route.fullPath }
+        query: { 
+          back: route.fullPath,
+          highlight: searchQuery.value
+        }
       })
     }
 
@@ -238,7 +148,6 @@ export default {
       isSearchFocused,
       searchQuery,
       filteredItems,
-      linkedRevisions,
       formatDisplayName,
       formatDate,
       highlightContent,
@@ -287,118 +196,6 @@ h1 {
   max-width: 100%;
   word-break: break-word;
   box-sizing: border-box;
-}
-
-.document-actions {
-  margin-top: 16px;
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-}
-
-.revision-link,
-.edit-button,
-.original-doc-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-size: 14px;
-  text-decoration: none;
-  transition: background-color 0.2s ease;
-}
-
-.revision-link {
-  background-color: #e8f5fd;
-  color: #1da1f2;
-}
-
-.revision-link:hover {
-  background-color: #d8effd;
-}
-
-.edit-button {
-  background-color: #dcfce7;
-  color: #16a34a;
-}
-
-.edit-button:hover {
-  background-color: #bbf7d0;
-}
-
-.revision-count {
-  color: #1a91da;
-}
-
-.original-doc-btn {
-  background-color: #f3f4f6;
-  color: #4b5563;
-}
-
-.original-doc-btn:hover {
-  background-color: #e5e7eb;
-}
-
-.linked-revisions {
-  background-color: #ffffff;
-  border: 1px solid #e1e8ed;
-  border-radius: 12px;
-  padding: 20px;
-  margin: 0 20px 20px;
-}
-
-.linked-revisions h2 {
-  font-size: 18px;
-  margin: 0 0 16px;
-  color: #14171a;
-}
-
-.revision-links {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.revision-link-item {
-  display: block;
-  padding: 16px;
-  background-color: #f8f9fa;
-  border: 1px solid #e1e8ed;
-  border-radius: 8px;
-  text-decoration: none;
-  color: inherit;
-  transition: background-color 0.2s ease;
-}
-
-.revision-link-item:hover {
-  background-color: #f3f4f6;
-}
-
-.revision-link-header {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 8px;
-}
-
-.document-name {
-  font-weight: bold;
-  color: #14171a;
-}
-
-.revision-title {
-  color: #1da1f2;
-}
-
-.revision-description {
-  color: #4b5563;
-  font-size: 14px;
-  margin-bottom: 8px;
-}
-
-.revision-date {
-  color: #657786;
-  font-size: 12px;
 }
 
 .search-container {
@@ -550,10 +347,6 @@ h1 {
 }
 
 @media (max-width: 768px) {
-  .linked-revisions {
-    margin: 0 8px 16px;
-  }
-
   .search-container {
     margin: 16px 8px;
   }
@@ -589,19 +382,6 @@ h1 {
 
   .meta-info {
     padding: 12px 16px;
-  }
-
-  .document-actions {
-    flex-direction: column;
-    width: 100%;
-    padding: 0 16px;
-  }
-
-  .revision-link,
-  .edit-button,
-  .original-doc-btn {
-    width: 100%;
-    justify-content: center;
   }
 }
 </style>

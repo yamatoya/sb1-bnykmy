@@ -19,20 +19,20 @@
               <i class="fas fa-question-circle"></i>
               質問
             </div>
-            <p class="tweet-content" v-html="formatText(tweet.question)"></p>
+            <p class="tweet-content" v-html="highlightContent(tweet.question)"></p>
           </div>
           <div class="answer">
             <div class="qa-label">
               <i class="fas fa-comment-dots"></i>
               回答
             </div>
-            <p class="tweet-content" v-html="formatText(tweet.answer)"></p>
+            <p class="tweet-content" v-html="highlightContent(tweet.answer)"></p>
           </div>
         </div>
 
         <!-- 通常のツイートの場合 -->
         <template v-else>
-          <p class="tweet-content" v-html="highlightedContent"></p>
+          <p class="tweet-content" v-html="highlightContent(tweet.content)"></p>
         </template>
         
         <div class="tweet-actions">
@@ -172,18 +172,18 @@ export default {
     const currentUrl = computed(() => `/document/${route.params.documentId}/${route.params.tweetId}`)
     const backUrl = computed(() => route.query.back || `/document/${route.params.documentId}`)
 
-    const highlightedContent = computed(() => {
-      if (!tweet.value?.content) return ''
-      let content = tweet.value.content
-      if (tweet.value.links) {
-        tweet.value.links.forEach(link => {
-          const escapedLinkText = link.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-          const regex = new RegExp(`(${escapedLinkText})`, 'gi')
-          content = content.replace(regex, '<span class="highlight">$1</span>')
-        })
-      }
+    const highlightContent = (text) => {
+      if (!text || !route.query.highlight) return text
+      let content = text
+      
+      const searchTerms = route.query.highlight.toLowerCase().split(' ').filter(term => term.length > 0)
+      searchTerms.forEach(term => {
+        const regex = new RegExp(`(${term})`, 'gi')
+        content = content.replace(regex, '<span class="highlight">$1</span>')
+      })
+      
       return content
-    })
+    }
 
     const getPathParts = (path) => {
       const parts = path.split('/')
@@ -341,7 +341,6 @@ export default {
       tweet,
       currentUrl,
       backUrl,
-      highlightedContent,
       showRevisionSelector,
       showTweetSelector,
       getRevisionContent,
@@ -353,6 +352,7 @@ export default {
       saveRevisionLinks,
       saveRelatedTweets,
       highlightChanges,
+      highlightContent,
       formatDisplayName,
       formatText
     }
