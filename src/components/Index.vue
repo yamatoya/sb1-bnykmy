@@ -48,7 +48,13 @@
             <div v-if="searchQuery && getMatchingContent(doc, id).length > 0" class="search-matches">
               <div v-for="(match, index) in getMatchingContent(doc, id)" :key="index" class="match-item">
                 <router-link 
-                  :to="getMatchLink(match, id)"
+                  :to="{
+                    path: `/document/${id}/${match.id}`,
+                    query: { 
+                      back: '/',
+                      highlight: searchQuery
+                    }
+                  }"
                   class="match-link"
                 >
                   <div class="match-header">
@@ -94,10 +100,11 @@
 </template>
 
 <script>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import documentsData from '../documents.json'
 import JsonDiffViewer from './JsonDiffViewer.vue'
+import { formatDisplayName } from '../utils/formatters'
 
 const STORAGE_KEY = 'legal-documents-data'
 
@@ -139,12 +146,6 @@ export default {
       }
     }
 
-    watch(searchQuery, (newValue) => {
-      router.replace({
-        query: { ...route.query, q: newValue || undefined }
-      })
-    })
-
     const filteredDocuments = computed(() => {
       if (!searchQuery.value) return documents.value
 
@@ -158,24 +159,17 @@ export default {
       )
     })
 
-    const formatDisplayName = (name) => {
-      return name.replace(/<br>/gi, '')
-    }
-
     const getSearchableContent = (doc) => {
       let contents = []
 
-      // ツイートの検索
       if (doc.tweets) {
         contents = contents.concat(doc.tweets.map(t => t.content))
       }
 
-      // パブリックコメントの検索
       if (doc.public_comment) {
         contents = contents.concat(doc.questions.map(q => `${q.question} ${q.answer}`))
       }
 
-      // 改訂履歴の検索
       if (doc.revisions) {
         contents = contents.concat(doc.revisions.flatMap(rev => {
           const revisionContents = [rev.title]
@@ -190,32 +184,6 @@ export default {
       return contents.join(' ')
     }
 
-    const getMatchLink = (match, docId) => {
-      if (match.type.startsWith('改訂')) {
-        return {
-          path: `/revisions/${docId}/${match.revisionId}`,
-          query: { highlight: match.content }
-        }
-      } else if (match.type.startsWith('質問') || match.type.startsWith('回答')) {
-        return {
-          path: `/document/${docId}/${match.id}`,
-          query: { 
-            type: 'public_comment',
-            back: '/',
-            highlight: match.content
-          }
-        }
-      } else {
-        return {
-          path: `/document/${docId}/${match.id}`,
-          query: { 
-            back: '/',
-            highlight: match.content
-          }
-        }
-      }
-    }
-
     const getMatchingContent = (doc, docId) => {
       if (!searchQuery.value) return []
 
@@ -223,7 +191,6 @@ export default {
       const maxLength = 150
       const searchTerms = searchQuery.value.toLowerCase().split(' ').filter(term => term.length > 0)
 
-      // 通常のツイート検索
       if (doc.tweets) {
         doc.tweets.forEach(tweet => {
           if (containsAllSearchTerms(tweet.content)) {
@@ -236,7 +203,6 @@ export default {
         })
       }
 
-      // パブリックコメント検索
       if (doc.public_comment) {
         doc.questions.forEach(q => {
           if (containsAllSearchTerms(q.question)) {
@@ -253,32 +219,6 @@ export default {
               id: q.id
             })
           }
-        })
-      }
-
-      // 改訂履歴検索
-      if (doc.revisions) {
-        doc.revisions.forEach(rev => {
-          if (containsAllSearchTerms(rev.title) || containsAllSearchTerms(rev.description)) {
-            matches.push({
-              type: `改訂 ${rev.title}`,
-              content: truncateText(rev.description || rev.title, maxLength),
-              revisionId: rev.id
-            })
-          }
-
-          rev.articles.forEach(article => {
-            const beforeContent = article.before || ''
-            const afterContent = article.after || ''
-            
-            if (containsAllSearchTerms(beforeContent) || containsAllSearchTerms(afterContent)) {
-              matches.push({
-                type: `改訂 ${rev.title}`,
-                content: truncateText(`${beforeContent} ${afterContent}`, maxLength),
-                revisionId: rev.id
-              })
-            }
-          })
         })
       }
 
@@ -375,7 +315,6 @@ export default {
       showingJsonDiffViewer,
       formatDisplayName,
       getMatchingContent,
-      getMatchLink,
       highlightSearchTerms,
       downloadDocuments,
       showJsonDiffViewer,
@@ -582,9 +521,8 @@ h1 {
 
 :deep(.highlight) {
   background-color: #fff3cd;
-  padding: 2px 0;
+  padding: 2px;
   border-radius: 2px;
-  font-weight: 500;
 }
 
 .footer {
@@ -647,6 +585,7 @@ h1 {
 
   .document-list {
     grid-template-columns: 1fr;
+    gap: 16px;
   }
 
   .document-header {
@@ -664,6 +603,15 @@ h1 {
     font-size: 16px;
   }
 
+  .document-actions {
+    flex-direction: column;
+  }
+
+  .action-button {
+    width: 100%;
+    justify-content: center;
+  }
+
   .search-matches {
     padding: 8px 12px;
   }
@@ -677,7 +625,9 @@ h1 {
   }
 
   .footer-button {
-    padding: 6px 12px;
+    width: 100%;
+    justify-content: center;
+    padding: 8px 12px;
     font-size: 12px;
   }
 }
