@@ -10,12 +10,12 @@
 
       <form @submit.prevent="saveList" class="editor-form">
         <div class="form-group">
-          <label>リスト名</label>
+          <label>タイトル</label>
           <input 
             type="text" 
             v-model="title" 
             class="form-control" 
-            placeholder="リスト名を入力"
+            placeholder="リストのタイトルを入力"
             required
           />
         </div>
@@ -44,14 +44,18 @@
           </div>
 
           <div v-else class="selected-tweets">
-            <div v-for="tweet in selectedTweets" :key="tweet.id" class="tweet-item">
-              <div class="tweet-header">
-                <span class="document-name">{{ getDocumentName(tweet.documentId) }}</span>
-                <button type="button" class="remove-button" @click="removeTweet(tweet)">
-                  <i class="fas fa-times"></i>
-                </button>
+            <div v-for="tweetPath in selectedTweets" :key="tweetPath" class="tweet-item">
+              <div class="tweet-preview">
+                <div class="tweet-header">
+                  <span class="document-name">{{ getDocumentName(tweetPath) }}</span>
+                  <button type="button" class="remove-button" @click="removeTweet(tweetPath)">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+                <div class="tweet-content">
+                  {{ getTweetContent(tweetPath) }}
+                </div>
               </div>
-              <div class="tweet-content">{{ getTweetContent(tweet) }}</div>
             </div>
           </div>
         </div>
@@ -61,15 +65,17 @@
           <button type="submit" class="action-button primary-button" :disabled="!isValid">保存</button>
         </div>
       </form>
-
-      <tweet-selector
-        v-if="showTweetSelector"
-        :documents="documents"
-        :initial-selections="selectedTweets.map(t => `${t.documentId}/${t.tweetId}`)"
-        @save="saveTweets"
-        @close="showTweetSelector = false"
-      />
     </div>
+
+    <tweet-selector
+      v-if="showTweetSelector"
+      :documents="documents"
+      :current-document-id="''"
+      :current-tweet-id="''"
+      :initial-selections="selectedTweets"
+      @save="handleTweetsSelected"
+      @close="showTweetSelector = false"
+    />
   </div>
 </template>
 
@@ -78,9 +84,9 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { v4 as uuidv4 } from 'uuid'
 import TweetSelector from './TweetSelector.vue'
+import { formatDisplayName } from '../utils/formatters'
 
 const STORAGE_KEY = 'legal-documents-data'
-const LISTS_STORAGE_KEY = 'legal-documents-lists'
 
 export default {
   name: 'ListEditor',
@@ -90,63 +96,43 @@ export default {
   setup() {
     const route = useRoute()
     const router = useRouter()
+    const documents = ref(null)
     const title = ref('')
     const description = ref('')
     const selectedTweets = ref([])
-    const documents = ref(null)
     const showTweetSelector = ref(false)
 
-    const isEditing = computed(() => route.params.id)
-    const isValid = computed(() => title.value && selectedTweets.value.length > 0)
+    const isEditing = computed(() => route.params.id !== undefined)
 
-    const getDocumentName = (documentId) => {
-      return documents.value?.[documentId]?.displayName || ''
+    const isValid = computed(() => {
+      return title.value && selectedTweets.value.length > 0
+    })
+
+    const getDocumentName = (tweetPath) => {
+      const [documentId] = tweetPath.split('/')
+      return formatDisplayName(documents.value?.[documentId]?.displayName)
     }
 
-    const getTweetContent = (tweet) => {
-      const doc = documents.value?.[tweet.documentId]
+    const getTweetContent = (tweetPath) => {
+      const [documentId, tweetId] = tweetPath.split('/')
+      const doc = documents.value?.[documentId]
       if (!doc) return ''
 
       if (doc.public_comment) {
-        const question = doc.questions.find(q => q.id === tweet.tweetId)
+        const question = doc.questions.find(q => q.id === tweetId)
         return question ? `${question.question}\n${question.answer}` : ''
-      } else {
-        const tweetObj = doc.tweets.find(t => t.id === tweet.tweetId)
-        return tweetObj?.content || ''
       }
+      const tweet = doc.tweets.find(t => t.id === tweetId)
+      return tweet ? tweet.content : ''
     }
 
-    const saveTweets = (selections) => {
-      selectedTweets.value = selections.map(selection => {
-        const [documentId, tweetId] = selection.split('/')
-        return { documentId, tweetId }
-      })
+    const handleTweetsSelected = (tweets) => {
+      selectedTweets.value = tweets
       showTweetSelector.value = false
     }
 
-    const removeTweet = (tweet) => {
-      selectedTweets.value = selectedTweets.value.filter(t => 
-        t.documentId !== tweet.documentId || t.tweetId !== tweet.tweetId
-      )
-    }
-
-    const loadList = () => {
-      if (!isEditing.value) return
-
-      const storedLists = localStorage.getItem(LISTS_STORAGE_KEY)
-      if (storedLists) {
-        try {
-          const lists = JSON.parse(storedLists)
-          const list = lists.find(l => l.id === route.params.id)
-          if (list) {
-            title.value = list.title
-            description.value = list.description || ''
-            selectedTweets.value = list.tweets
-          }
-        } catch (e) {
-          console.error('Failed to load list:', e)
-        }
-      }
+    const removeTweet = (tweetPath) => {
+      selectedTweets.value = selectedTweets.value.filter(t => t !== tweetPath)
     }
 
     const saveList = () => {
@@ -159,21 +145,51 @@ export default {
         updatedAt: new Date().toISOString()
       }
 
-      const storedLists = localStorage.getItem(LISTS_STORAGE_KEY)
-      const lists = storedLists ? JSON.parse(storedLists) : []
+      const storedData = localStorage.getItem(STORAGE_KEY)
+      if (storedData) {
+        try {
+          const documents = JSON.parse(storedData)
+          if (!documents.lists) {
+            documents.lists = []
+          }
 
-      if (isEditing.value) {
-        const index = lists.findIndex(l => l.id === list.id)
-        if (index !== -1) {
-          list.createdAt = lists[index].createdAt
-          lists[index] = list
+          if (isEditing.value) {
+            const index = documents.lists.findIndex(l => l.id === list.id)
+            if (index !== -1) {
+              list.createdAt = documents.lists[index].createdAt
+              documents.lists[index] = list
+            }
+          } else {
+            documents.lists.push(list)
+          }
+
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(documents))
+          router.push('/lists')
+        } catch (e) {
+          console.error('Failed to save list:', e)
         }
-      } else {
-        lists.push(list)
       }
+    }
 
-      localStorage.setItem(LISTS_STORAGE_KEY, JSON.stringify(lists))
-      router.push('/lists')
+    const loadList = () => {
+      if (!isEditing.value) return
+
+      const storedData = localStorage.getItem(STORAGE_KEY)
+      if (storedData) {
+        try {
+          const documents = JSON.parse(storedData)
+          if (documents.lists) {
+            const list = documents.lists.find(l => l.id === route.params.id)
+            if (list) {
+              title.value = list.title
+              description.value = list.description || ''
+              selectedTweets.value = list.tweets
+            }
+          }
+        } catch (e) {
+          console.error('Failed to load list:', e)
+        }
+      }
     }
 
     onMounted(() => {
@@ -189,16 +205,16 @@ export default {
     })
 
     return {
+      documents,
       title,
       description,
       selectedTweets,
-      documents,
       showTweetSelector,
       isEditing,
       isValid,
       getDocumentName,
       getTweetContent,
-      saveTweets,
+      handleTweetsSelected,
       removeTweet,
       saveList
     }
@@ -260,7 +276,7 @@ textarea.form-control {
 
 .section-header h2 {
   margin: 0;
-  font-size: 18px;
+  font-size: 20px;
   color: #14171a;
 }
 
@@ -280,19 +296,21 @@ textarea.form-control {
 }
 
 .tweet-item {
-  background-color: #f8f9fa;
+  background: #f8f9fa;
   border: 1px solid #e1e8ed;
   border-radius: 8px;
   overflow: hidden;
 }
 
+.tweet-preview {
+  padding: 16px;
+}
+
 .tweet-header {
-  padding: 12px;
-  background-color: #ffffff;
-  border-bottom: 1px solid #e1e8ed;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 12px;
 }
 
 .document-name {
@@ -315,10 +333,10 @@ textarea.form-control {
 }
 
 .tweet-content {
-  padding: 12px;
-  white-space: pre-wrap;
   font-size: 14px;
-  color: #14171a;
+  color: #4b5563;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .form-actions {
@@ -333,9 +351,19 @@ textarea.form-control {
     padding: 16px;
   }
 
+  .section-header {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+
   .form-actions {
     flex-direction: column-reverse;
     gap: 12px;
+  }
+
+  .action-button {
+    width: 100%;
   }
 }
 </style>
