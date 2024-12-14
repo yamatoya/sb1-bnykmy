@@ -23,6 +23,15 @@
             <i class="fas fa-times"></i>
           </button>
         </div>
+        <div v-if="hasSearchResults" class="search-actions">
+          <button 
+            class="action-button secondary-button"
+            @click="selectAllSearchResults"
+          >
+            <i class="fas fa-check-double"></i>
+            検索結果をすべて選択
+          </button>
+        </div>
       </div>
 
       <div class="modal-body">
@@ -132,6 +141,37 @@ export default {
       return tweets.filter(t => matchesSearch(t.content))
     }
 
+    const getAllSearchResults = () => {
+      const results = []
+      filteredDocumentsEntries.value.forEach(([docId, doc]) => {
+        if (doc.public_comment) {
+          filteredQuestions(doc.questions).forEach(q => {
+            if (q.id !== props.currentTweetId) {
+              results.push(`${docId}/${q.id}`)
+            }
+          })
+        } else {
+          filteredTweets(doc.tweets).forEach(t => {
+            if (t.id !== props.currentTweetId) {
+              results.push(`${docId}/${t.id}`)
+            }
+          })
+        }
+      })
+      return results
+    }
+
+    const hasSearchResults = computed(() => {
+      return searchQuery.value && getAllSearchResults().length > 0
+    })
+
+    const selectAllSearchResults = () => {
+      const results = getAllSearchResults()
+      const newSelections = new Set([...selectedTweets.value])
+      results.forEach(result => newSelections.add(result))
+      selectedTweets.value = Array.from(newSelections)
+    }
+
     const highlightSearchTerms = (text) => {
       if (!searchQuery.value || !text) return text
 
@@ -157,6 +197,8 @@ export default {
       filteredTweets,
       formatDisplayName,
       highlightSearchTerms,
+      hasSearchResults,
+      selectAllSearchResults,
       save
     }
   }
@@ -164,6 +206,8 @@ export default {
 </script>
 
 <style scoped>
+@import '../styles/common.css';
+
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -262,6 +306,12 @@ export default {
 
 .clear-button:hover {
   background-color: rgba(0, 0, 0, 0.1);
+}
+
+.search-actions {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
 }
 
 .modal-body {
@@ -363,12 +413,6 @@ export default {
   background-color: rgba(29, 161, 242, 0.1);
 }
 
-.highlight {
-  background-color: #fff3cd;
-  padding: 2px;
-  border-radius: 2px;
-}
-
 @media (max-width: 768px) {
   .modal-content {
     width: 95%;
@@ -385,6 +429,14 @@ export default {
 
   .search-input {
     font-size: 16px;
+  }
+
+  .search-actions {
+    margin-top: 8px;
+  }
+
+  .action-button {
+    width: 100%;
   }
 }
 </style>
