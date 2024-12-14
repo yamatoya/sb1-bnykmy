@@ -25,17 +25,17 @@
             <div class="card-header">
               <span class="index">{{ item.index }}</span>
             </div>
-            <div class="card-content">
+            <div v-if="hasContent(item)" class="card-content">
               <template v-if="document.public_comment">
                 <div class="qa-content">
-                  <div class="question">
+                  <div v-if="item.question" class="question">
                     <div class="qa-label">
                       <i class="fas fa-question-circle"></i>
                       質問
                     </div>
                     <p class="tweet-content" v-html="highlightContent(item.question)"></p>
                   </div>
-                  <div class="answer">
+                  <div v-if="item.answer" class="answer">
                     <div class="qa-label">
                       <i class="fas fa-comment-dots"></i>
                       回答
@@ -51,7 +51,7 @@
                 </div>
               </template>
               <template v-else>
-                <p class="tweet-content" v-html="highlightContent(item.content)"></p>
+                <p v-if="item.content" class="tweet-content" v-html="highlightContent(item.content)"></p>
                 <div v-if="hasMetaInfo(item)" class="meta-info">
                   <span v-if="item.links?.length" class="link-count">
                     <i class="fas fa-link"></i>
@@ -115,6 +115,13 @@ export default {
       })
     })
 
+    const hasContent = (item) => {
+      if (document.value?.public_comment) {
+        return item.question || item.answer || hasMetaInfo(item)
+      }
+      return item.content || hasMetaInfo(item)
+    }
+
     const highlightContent = (text) => {
       if (!text || !searchQuery.value) return text
       let content = text
@@ -163,7 +170,8 @@ export default {
       formatDate,
       highlightContent,
       goToItem,
-      hasMetaInfo
+      hasMetaInfo,
+      hasContent
     }
   }
 }
@@ -174,6 +182,29 @@ export default {
 
 .tweets-list {
   margin: 20px 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.tweets-list .card {
+  margin-bottom: 0;
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+}
+
+.tweets-list .card:first-child {
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+}
+
+.tweets-list .card:last-child {
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+}
+
+.tweets-list .card + .card {
+  border-top: none;
 }
 
 .index {
@@ -288,6 +319,14 @@ export default {
 
   .meta-info {
     padding: 12px;
+  }
+
+  .tweets-list .card:first-child {
+    border-radius: 0;
+  }
+
+  .tweets-list .card:last-child {
+    border-radius: 0;
   }
 }
 </style>
