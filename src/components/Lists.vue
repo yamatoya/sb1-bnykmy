@@ -16,7 +16,19 @@
         <div v-else class="lists">
           <div v-for="list in sortedLists" :key="list.id" class="card">
             <div class="card-header">
-              <h2>{{ list.title }}</h2>
+              <div class="list-info">
+                <h2>{{ list.title }}</h2>
+                <div class="list-meta">
+                  <span class="tweet-count">
+                    <i class="fas fa-comment"></i>
+                    {{ list.tweets.length }}件
+                  </span>
+                  <span class="update-date">
+                    <i class="fas fa-clock"></i>
+                    {{ formatDate(list.updatedAt) }}
+                  </span>
+                </div>
+              </div>
               <div class="list-actions">
                 <router-link 
                   :to="`/lists/${list.id}/edit`" 
@@ -36,10 +48,6 @@
             </div>
             <div v-if="list.description" class="list-description">
               {{ list.description }}
-            </div>
-            <div class="list-meta">
-              <span class="tweet-count">{{ list.tweets.length }}件のツイート</span>
-              <span class="update-date">{{ formatDate(list.updatedAt) }}</span>
             </div>
           </div>
         </div>
@@ -132,20 +140,40 @@ export default {
 .card-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.list-info {
+  flex: 1;
+  min-width: 0;
 }
 
 .card-header h2 {
-  margin: 0;
+  margin: 0 0 8px 0;
   font-size: 18px;
   color: #14171a;
+  word-break: break-word;
+}
+
+.list-meta {
+  display: flex;
+  gap: 16px;
+  color: #657786;
+  font-size: 14px;
+}
+
+.tweet-count,
+.update-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .list-actions {
   display: flex;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .list-description {
@@ -153,14 +181,7 @@ export default {
   color: #4b5563;
   font-size: 14px;
   line-height: 1.5;
-}
-
-.list-meta {
-  margin-top: 12px;
-  display: flex;
-  justify-content: space-between;
-  color: #657786;
-  font-size: 12px;
+  word-break: break-word;
 }
 
 .warning-button {
@@ -190,12 +211,19 @@ export default {
 @media (max-width: 768px) {
   .card-header {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
+    gap: 12px;
   }
 
   .list-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     width: 100%;
-    justify-content: flex-end;
+  }
+
+  .action-button {
+    width: 100%;
+    justify-content: center;
   }
 }
 </style>
