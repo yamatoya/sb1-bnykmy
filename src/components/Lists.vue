@@ -14,7 +14,7 @@
         </div>
 
         <div v-else class="lists">
-          <div v-for="list in sortedLists" :key="list.id" class="card">
+          <div v-for="list in sortedLists" :key="list.id" class="card clickable" @click="goToList(list)">
             <div class="card-header">
               <div class="list-info">
                 <h2>{{ list.title }}</h2>
@@ -29,7 +29,7 @@
                   </span>
                 </div>
               </div>
-              <div class="list-actions">
+              <div class="list-actions" @click.stop>
                 <router-link 
                   :to="`/lists/${list.id}/edit`" 
                   class="action-button secondary-button"
@@ -67,6 +67,7 @@
 
 <script>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { formatDate } from '../utils/formatters'
 
 const LISTS_STORAGE_KEY = 'legal-documents-lists'
@@ -74,6 +75,7 @@ const LISTS_STORAGE_KEY = 'legal-documents-lists'
 export default {
   name: 'Lists',
   setup() {
+    const router = useRouter()
     const lists = ref([])
 
     const sortedLists = computed(() => {
@@ -101,6 +103,10 @@ export default {
       }
     }
 
+    const goToList = (list) => {
+      router.push(`/lists/${list.id}`)
+    }
+
     onMounted(() => {
       loadLists()
     })
@@ -109,6 +115,7 @@ export default {
       lists,
       sortedLists,
       deleteList,
+      goToList,
       formatDate
     }
   }
@@ -135,6 +142,16 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 20px;
+}
+
+.card.clickable {
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card.clickable:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .card-header {

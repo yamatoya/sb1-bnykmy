@@ -10,6 +10,7 @@ import RevisionEditorPage from './components/RevisionEditorPage.vue'
 import PublicCommentEditor from './components/PublicCommentEditor.vue'
 import Lists from './components/Lists.vue'
 import ListEditor from './components/ListEditor.vue'
+import ListDetail from './components/ListDetail.vue'
 import { saveScrollPosition, scrollToTop, restoreScrollPosition } from './utils/scrollManager'
 import './styles/common.css'
 
@@ -56,11 +57,15 @@ const router = createRouter({
       path: '/lists/:id/edit',
       component: ListEditor,
       name: 'list-edit'
+    },
+    {
+      path: '/lists/:id',
+      component: ListDetail,
+      name: 'list-detail'
     }
   ]
 })
 
-// ナビゲーションガードの設定
 router.beforeEach((to, from, next) => {
   saveScrollPosition(from)
   next()
