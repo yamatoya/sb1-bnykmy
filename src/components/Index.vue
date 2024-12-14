@@ -51,7 +51,7 @@
                   :to="{
                     path: `/document/${id}/${match.id}`,
                     query: { 
-                      back: '/',
+                      back: `/?q=${encodeURIComponent(searchQuery)}`,
                       highlight: searchQuery
                     }
                   }"
@@ -100,7 +100,7 @@
 </template>
 
 <script>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import documentsData from '../documents.json'
 import JsonDiffViewer from './JsonDiffViewer.vue'
@@ -121,6 +121,18 @@ export default {
     const showingJsonDiffViewer = ref(false)
     const searchQuery = ref('')
 
+    // クエリパラメータの変更を監視
+    watch(() => route.query.q, (newQuery) => {
+      searchQuery.value = newQuery || ''
+    })
+
+    // 検索クエリの変更を監視してURLを更新
+    watch(searchQuery, (newQuery) => {
+      router.replace({
+        query: { ...route.query, q: newQuery || undefined }
+      })
+    })
+
     onMounted(() => {
       const storedData = localStorage.getItem(STORAGE_KEY)
       if (storedData) {
@@ -134,6 +146,7 @@ export default {
         saveToLocalStorage(documentsData)
       }
 
+      // 初期表示時にクエリパラメータから検索ワードを設定
       searchQuery.value = route.query.q || ''
     })
 
