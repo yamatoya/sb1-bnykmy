@@ -1,62 +1,73 @@
 <template>
-  <div v-if="document">
-    <div class="profile-header">
-      <router-link to="/" class="back-link">←</router-link>
-      <h1>{{ formatDisplayName(document.displayName) }}</h1>
-    </div>
+  <div class="page">
+    <div class="container">
+      <div v-if="document">
+        <header class="page-header">
+          <router-link to="/" class="back-link">
+            <i class="fas fa-arrow-left"></i>
+          </router-link>
+          <h1>{{ formatDisplayName(document.displayName) }}</h1>
+        </header>
 
-    <div class="search-container">
-      <input
-        type="text"
-        v-model="searchQuery"
-        placeholder="検索..."
-        class="search-input"
-        @focus="isSearchFocused = true"
-        @blur="isSearchFocused = false"
-      />
-    </div>
-
-    <div class="tweets">
-      <div v-for="item in filteredItems" :key="item.id" class="tweet" @click="goToItem(item.id)">
-        <div class="tweet-header">
-          <span class="index">{{ item.index }}</span>
+        <div class="search-container">
+          <input
+            type="text"
+            v-model="searchQuery"
+            placeholder="検索..."
+            class="search-input"
+            @focus="isSearchFocused = true"
+            @blur="isSearchFocused = false"
+          />
         </div>
-        <template v-if="document.public_comment">
-          <div class="qa-content">
-            <div class="question">
-              <div class="qa-label">
-                <i class="fas fa-question-circle"></i>
-                質問
-              </div>
-              <p class="tweet-content" v-html="highlightContent(item.question)"></p>
+
+        <div class="tweets-list">
+          <div v-for="item in filteredItems" :key="item.id" class="card" @click="goToItem(item.id)">
+            <div class="card-header">
+              <span class="index">{{ item.index }}</span>
             </div>
-            <div class="answer">
-              <div class="qa-label">
-                <i class="fas fa-comment-dots"></i>
-                回答
-              </div>
-              <p class="tweet-content" v-html="highlightContent(item.answer)"></p>
-            </div>
-            <div v-if="item.links?.length" class="meta-info">
-              <span class="link-count">
-                <i class="fas fa-link"></i>
-                関連リンク({{ item.links.length }})
-              </span>
+            <div class="card-content">
+              <template v-if="document.public_comment">
+                <div class="qa-content">
+                  <div class="question">
+                    <div class="qa-label">
+                      <i class="fas fa-question-circle"></i>
+                      質問
+                    </div>
+                    <p class="tweet-content" v-html="highlightContent(item.question)"></p>
+                  </div>
+                  <div class="answer">
+                    <div class="qa-label">
+                      <i class="fas fa-comment-dots"></i>
+                      回答
+                    </div>
+                    <p class="tweet-content" v-html="highlightContent(item.answer)"></p>
+                  </div>
+                  <div v-if="item.links?.length" class="meta-info">
+                    <span class="link-count">
+                      <i class="fas fa-link"></i>
+                      関連リンク({{ item.links.length }})
+                    </span>
+                  </div>
+                </div>
+              </template>
+              <template v-else>
+                <p class="tweet-content" v-html="highlightContent(item.content)"></p>
+                <div v-if="hasMetaInfo(item)" class="meta-info">
+                  <span v-if="item.links?.length" class="link-count">
+                    <i class="fas fa-link"></i>
+                    関連リンク({{ item.links.length }})
+                  </span>
+                  <span v-if="item.public_comment_links?.length" class="public-comment-count">
+                    パブリックコメント({{ item.public_comment_links.length }})
+                  </span>
+                </div>
+              </template>
             </div>
           </div>
-        </template>
-        <template v-else>
-          <p class="tweet-content" v-html="highlightContent(item.content)"></p>
-          <div v-if="hasMetaInfo(item)" class="meta-info">
-            <span v-if="item.links?.length" class="link-count">
-              <i class="fas fa-link"></i>
-              関連リンク({{ item.links.length }})
-            </span>
-            <span v-if="item.public_comment_links?.length" class="public-comment-count">
-              パブリックコメント({{ item.public_comment_links.length }})
-            </span>
-          </div>
-        </template>
+        </div>
+      </div>
+      <div v-else class="error-message">
+        指定された文書が見つかりません。
       </div>
     </div>
   </div>
@@ -159,99 +170,10 @@ export default {
 </script>
 
 <style scoped>
-.profile-header {
-  background-color: #ffffff;
-  padding: 20px;
-  margin-bottom: 20px;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-height: 80px;
-  border: 1px solid #e1e8ed;
-  border-radius: 12px;
-}
+@import '../styles/common.css';
 
-.back-link {
-  position: absolute;
-  left: 20px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 24px;
-  text-decoration: none;
-  color: #1da1f2;
-  z-index: 1;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-h1 {
-  margin: 0;
-  padding: 0 60px;
-  text-align: center;
-  font-size: 1.5em;
-  max-width: 100%;
-  word-break: break-word;
-  box-sizing: border-box;
-}
-
-.search-container {
-  margin: 20px;
-  display: flex;
-  justify-content: center;
-}
-
-.search-input {
-  width: 100%;
-  max-width: 600px;
-  padding: 12px 20px;
-  border: 2px solid #e1e8ed;
-  border-radius: 30px;
-  font-size: 16px;
-  transition: all 0.3s ease;
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: #1da1f2;
-  box-shadow: 0 0 0 2px rgba(29, 161, 242, 0.1);
-}
-
-.tweets {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 0 20px;
-}
-
-.tweet {
-  background-color: #ffffff;
-  border: 1px solid #e1e8ed;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.tweet + .tweet {
-  border-top: none;
-}
-
-.tweet:first-child {
-  border-radius: 12px 12px 0 0;
-}
-
-.tweet:last-child {
-  border-radius: 0 0 12px 12px;
-}
-
-.tweet:hover {
-  background-color: #f8f9fa;
-}
-
-.tweet-header {
-  padding: 12px 16px;
-  border-bottom: 1px solid #e1e8ed;
+.tweets-list {
+  margin: 20px 0;
 }
 
 .index {
@@ -261,14 +183,14 @@ h1 {
 
 .tweet-content {
   font-size: 16px;
-  line-height: 1.6;
+  line-height: 1.5;
   color: #2d3748;
   white-space: pre-wrap;
   word-break: break-word;
   margin: 0;
-  padding: 12px 16px;
 }
 
+/* QAコンテンツのスタイル */
 .qa-content {
   background-color: #ffffff;
 }
@@ -340,32 +262,17 @@ h1 {
   color: #1da1f2;
 }
 
-:deep(.highlight) {
-  background-color: #fff3cd;
-  padding: 2px;
-  border-radius: 2px;
+.error-message {
+  text-align: center;
+  padding: 40px;
+  color: #e0245e;
+  font-weight: bold;
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 @media (max-width: 768px) {
-  .search-container {
-    margin: 16px 8px;
-  }
-
-  .tweets {
-    padding: 0 8px;
-  }
-
-  .tweet {
-    margin-bottom: 0;
-    border-radius: 0;
-    border-left: none;
-    border-right: none;
-  }
-
-  .tweet:first-child {
-    border-top: none;
-  }
-
   .qa-content {
     border-radius: 0;
   }
@@ -377,11 +284,10 @@ h1 {
 
   .tweet-content {
     font-size: 15px;
-    padding: 0 8px;
   }
 
   .meta-info {
-    padding: 12px 16px;
+    padding: 12px;
   }
 }
 </style>

@@ -1,0 +1,160 @@
+/* 共通レイアウト */
+.page {
+    min-height: 100vh;
+    background-color: #f7f9fa;
+    padding: 20px;
+  }
+  
+  .container {
+    max-width: 800px;
+    margin: 0 auto;
+    width: 100%;
+  }
+  
+  /* ヘッダー */
+  .page-header {
+    background-color: #1da1f2;
+    color: #ffffff;
+    padding: 20px;
+    position: relative;
+    text-align: center;
+    border-radius: 12px 12px 0 0;
+    margin-bottom: 20px;
+  }
+  
+  .page-header h1 {
+    margin: 0;
+    font-size: 24px;
+  }
+  
+  .back-link {
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 24px;
+    text-decoration: none;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  /* 検索 */
+  .search-container {
+    margin: 20px 0;
+    padding: 0 20px;
+    width: 100%;
+  }
+  
+  .search-input {
+    width: 100%;
+    padding: 12px 20px;
+    border: 2px solid #e1e8ed;
+    border-radius: 30px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+  }
+  
+  .search-input:focus {
+    outline: none;
+    border-color: #1da1f2;
+    box-shadow: 0 0 0 2px rgba(29, 161, 242, 0.1);
+  }
+  
+  /* カード */
+  .card {
+    background-color: #ffffff;
+    border: 1px solid #e1e8ed;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  
+  .card-header {
+    padding: 16px;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #e1e8ed;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .card-content {
+    padding: 16px;
+  }
+  
+  /* アクションボタン */
+  .action-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+  }
+  
+  .primary-button {
+    background-color: #1da1f2;
+    color: white;
+    border: none;
+  }
+  
+  .primary-button:hover {
+    background-color: #1991db;
+  }
+  
+  .secondary-button {
+    background-color: #e8f5fd;
+    color: #1da1f2;
+    border: none;
+  }
+  
+  .secondary-button:hover {
+    background-color: #d8effd;
+  }
+  
+  /* ハイライト */
+  .highlight {
+    background-color: #fff3cd;
+    padding: 2px;
+    border-radius: 2px;
+  }
+  
+  /* レスポンシブ対応 */
+  @media (max-width: 768px) {
+    .page {
+      padding: 10px;
+    }
+  
+    .page-header {
+      padding: 15px;
+    }
+  
+    .page-header h1 {
+      font-size: 20px;
+      margin: 0 30px;
+    }
+  
+    .search-container {
+      padding: 0 10px;
+    }
+  
+    .card {
+      border-radius: 8px;
+    }
+  
+    .card-header,
+    .card-content {
+      padding: 12px;
+    }
+  
+    .action-button {
+      width: 100%;
+      justify-content: center;
+    }
+  }

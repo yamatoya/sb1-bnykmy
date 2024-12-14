@@ -9,6 +9,7 @@ import RevisionDetail from './components/RevisionDetail.vue'
 import RevisionEditorPage from './components/RevisionEditorPage.vue'
 import PublicCommentEditor from './components/PublicCommentEditor.vue'
 import { saveScrollPosition, scrollToTop, restoreScrollPosition } from './utils/scrollManager'
+import './styles/common.css'
 
 const router = createRouter({
   history: createWebHistory(),

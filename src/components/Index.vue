@@ -1,96 +1,98 @@
 <template>
-  <div class="layout">
-    <main class="main-content">
-      <div class="container">
+  <div class="page">
+    <div class="container">
+      <header class="page-header">
         <h1>法律文書一覧</h1>
-        <div class="search-container">
-          <input
-            type="text"
-            v-model="searchQuery"
-            placeholder="全文検索..."
-            class="search-input"
-            @focus="isSearchFocused = true"
-            @blur="isSearchFocused = false"
-          />
-        </div>
-        <div class="document-list">
-          <div v-for="(doc, id) in filteredDocuments" :key="id" class="document-item">
-            <router-link :to="`/document/${id}`" class="document-header">
-              <div class="document-icon">{{ doc.displayName.charAt(0) }}</div>
-              <div class="document-info">
-                <div class="document-name">{{ formatDisplayName(doc.displayName) }}</div>
-                <div v-if="doc.revisions" class="revision-badge">
-                  改訂あり ({{ doc.revisions.length }}件)
-                </div>
-              </div>
-            </router-link>
-            
-            <div class="document-actions">
-              <router-link 
-                :to="`/revisions/${id}`" 
-                class="action-button revision-button"
-              >
-                <i class="fas fa-history"></i>
-                {{ doc.revisions ? '改訂履歴を表示' : '改訂履歴を追加' }}
-              </router-link>
-              <a 
-                v-if="doc.public_comment && doc.url" 
-                :href="doc.url" 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                class="action-button original-button"
-              >
-                <i class="fas fa-external-link-alt"></i>
-                原文を表示
-              </a>
-            </div>
+      </header>
 
-            <div v-if="searchQuery && getMatchingContent(doc, id).length > 0" class="search-matches">
-              <div v-for="(match, index) in getMatchingContent(doc, id)" :key="index" class="match-item">
-                <router-link 
-                  :to="{
-                    path: `/document/${id}/${match.id}`,
-                    query: { 
-                      back: `/?q=${encodeURIComponent(searchQuery)}`,
-                      highlight: searchQuery
-                    }
-                  }"
-                  class="match-link"
-                >
-                  <div class="match-header">
-                    <span class="match-index">{{ match.type }}</span>
-                  </div>
-                  <div class="match-content" v-html="highlightSearchTerms(match.content)"></div>
-                </router-link>
+      <div class="search-container">
+        <input
+          type="text"
+          v-model="searchQuery"
+          placeholder="全文検索..."
+          class="search-input"
+          @focus="isSearchFocused = true"
+          @blur="isSearchFocused = false"
+        />
+      </div>
+
+      <div class="documents-grid">
+        <div v-for="(doc, id) in filteredDocuments" :key="id" class="card">
+          <router-link :to="`/document/${id}`" class="document-header">
+            <div class="document-icon">{{ doc.displayName.charAt(0) }}</div>
+            <div class="document-info">
+              <div class="document-name">{{ formatDisplayName(doc.displayName) }}</div>
+              <div v-if="doc.revisions" class="revision-badge">
+                改訂あり ({{ doc.revisions.length }}件)
               </div>
+            </div>
+          </router-link>
+          
+          <div class="document-actions">
+            <router-link 
+              :to="`/revisions/${id}`" 
+              class="action-button secondary-button"
+            >
+              <i class="fas fa-history"></i>
+              {{ doc.revisions ? '改訂履歴を表示' : '改訂履歴を追加' }}
+            </router-link>
+            <a 
+              v-if="doc.public_comment && doc.url" 
+              :href="doc.url" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              class="action-button secondary-button"
+            >
+              <i class="fas fa-external-link-alt"></i>
+              原文を表示
+            </a>
+          </div>
+
+          <div v-if="searchQuery && getMatchingContent(doc, id).length > 0" class="search-matches">
+            <div v-for="(match, index) in getMatchingContent(doc, id)" :key="index" class="match-item">
+              <router-link 
+                :to="{
+                  path: `/document/${id}/${match.id}`,
+                  query: { 
+                    back: `/?q=${encodeURIComponent(searchQuery)}`,
+                    highlight: searchQuery
+                  }
+                }"
+                class="match-link"
+              >
+                <div class="match-header">
+                  <span class="match-index">{{ match.type }}</span>
+                </div>
+                <div class="match-content" v-html="highlightSearchTerms(match.content)"></div>
+              </router-link>
             </div>
           </div>
         </div>
       </div>
-    </main>
 
-    <footer class="footer">
-      <div class="footer-content">
-        <div class="footer-buttons">
-          <router-link to="/public-comment/new" class="footer-button">
-            <i class="fas fa-plus"></i>
-            <span>パブリックコメントを追加</span>
-          </router-link>
-          <button class="footer-button" @click="downloadDocuments">
-            <i class="fas fa-download"></i>
-            <span>JSONをダウンロード</span>
-          </button>
-          <button class="footer-button" @click="showJsonDiffViewer">
-            <i class="fas fa-code"></i>
-            <span>JSON差分を表示</span>
-          </button>
-          <button class="footer-button warning" @click="resetToDefault">
-            <i class="fas fa-sync-alt"></i>
-            <span>データをリセット</span>
-          </button>
+      <footer class="footer">
+        <div class="footer-content">
+          <div class="footer-buttons">
+            <router-link to="/public-comment/new" class="action-button primary-button">
+              <i class="fas fa-plus"></i>
+              <span>パブリックコメントを追加</span>
+            </router-link>
+            <button class="action-button secondary-button" @click="downloadDocuments">
+              <i class="fas fa-download"></i>
+              <span>JSONをダウンロード</span>
+            </button>
+            <button class="action-button secondary-button" @click="showJsonDiffViewer">
+              <i class="fas fa-code"></i>
+              <span>JSON差分を表示</span>
+            </button>
+            <button class="action-button warning-button" @click="resetToDefault">
+              <i class="fas fa-sync-alt"></i>
+              <span>データをリセット</span>
+            </button>
+          </div>
         </div>
-      </div>
-    </footer>
+      </footer>
+    </div>
 
     <json-diff-viewer
       v-if="showingJsonDiffViewer"
@@ -338,65 +340,13 @@ export default {
 </script>
 
 <style scoped>
-.layout {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-}
+@import '../styles/common.css';
 
-.main-content {
-  flex: 1;
-  background-color: #f7f9fa;
-  padding: 20px;
-}
-
-.container {
-  max-width: 1400px;
-  margin: 0 auto;
-  width: 100%;
-}
-
-h1 {
-  text-align: center;
-  margin: 0 0 20px 0;
-  color: #14171a;
-  font-size: 28px;
-}
-
-.search-container {
-  margin: 20px 0;
-  display: flex;
-  justify-content: center;
-}
-
-.search-input {
-  width: 100%;
-  max-width: 800px;
-  padding: 12px 20px;
-  border: 2px solid #e1e8ed;
-  border-radius: 30px;
-  font-size: 16px;
-  transition: all 0.3s ease;
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: #1da1f2;
-  box-shadow: 0 0 0 2px rgba(29, 161, 242, 0.1);
-}
-
-.document-list {
+.documents-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
   gap: 20px;
-  margin-top: 20px;
-}
-
-.document-item {
-  background: white;
-  border: 1px solid #e1e8ed;
-  border-radius: 12px;
-  overflow: hidden;
+  margin: 20px 0;
 }
 
 .document-header {
@@ -458,37 +408,6 @@ h1 {
   gap: 12px;
 }
 
-.action-button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-size: 14px;
-  text-decoration: none;
-  transition: all 0.2s ease;
-}
-
-.revision-button {
-  background-color: #e8f5fd;
-  color: #1da1f2;
-  border: none;
-}
-
-.revision-button:hover {
-  background-color: #d8effd;
-}
-
-.original-button {
-  background-color: #f3f4f6;
-  color: #4b5563;
-  border: none;
-}
-
-.original-button:hover {
-  background-color: #e5e7eb;
-}
-
 .search-matches {
   padding: 8px 16px;
 }
@@ -532,12 +451,6 @@ h1 {
   color: #14171a;
 }
 
-:deep(.highlight) {
-  background-color: #fff3cd;
-  padding: 2px;
-  border-radius: 2px;
-}
-
 .footer {
   background-color: #ffffff;
   border-top: 1px solid #e1e8ed;
@@ -559,99 +472,29 @@ h1 {
   flex-wrap: wrap;
 }
 
-.footer-button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  border: 1px solid #1da1f2;
-  border-radius: 20px;
-  background: none;
-  color: #1da1f2;
-  font-size: 14px;
-  cursor: pointer;
-  text-decoration: none;
-  transition: all 0.2s ease;
+.warning-button {
+  background-color: #fee2e2;
+  color: #ef4444;
+  border: none;
 }
 
-.footer-button:hover {
-  background-color: rgba(29, 161, 242, 0.1);
-}
-
-.footer-button.warning {
-  border-color: #e0245e;
-  color: #e0245e;
-}
-
-.footer-button.warning:hover {
-  background-color: rgba(224, 36, 94, 0.1);
+.warning-button:hover {
+  background-color: #fecaca;
 }
 
 @media (max-width: 768px) {
-  .main-content {
-    padding: 16px;
-  }
-
-  .container {
-    padding: 0;
-  }
-
-  .document-list {
+  .documents-grid {
     grid-template-columns: 1fr;
     gap: 16px;
-  }
-
-  .document-header {
-    padding: 12px;
-  }
-
-  .document-icon {
-    width: 40px;
-    height: 40px;
-    font-size: 16px;
-    margin-right: 12px;
-  }
-
-  .document-name {
-    font-size: 16px;
   }
 
   .document-actions {
     flex-direction: column;
   }
 
-  .action-button {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .search-matches {
-    padding: 8px 12px;
-  }
-
-  .footer {
-    padding: 12px;
-  }
-
   .footer-buttons {
+    flex-direction: column;
     gap: 8px;
-  }
-
-  .footer-button {
-    width: 100%;
-    justify-content: center;
-    padding: 8px 12px;
-    font-size: 12px;
-  }
-}
-
-@media (min-width: 1920px) {
-  .container {
-    max-width: 1800px;
-  }
-
-  .document-list {
-    grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
   }
 }
 </style>
