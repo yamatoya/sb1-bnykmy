@@ -73,6 +73,10 @@
       <footer class="footer">
         <div class="footer-content">
           <div class="footer-buttons">
+            <router-link to="/lists" class="action-button primary-button">
+              <i class="fas fa-list"></i>
+              <span>リスト一覧</span>
+            </router-link>
             <router-link to="/public-comment/new" class="action-button primary-button">
               <i class="fas fa-plus"></i>
               <span>パブリックコメントを追加</span>
@@ -102,7 +106,7 @@
 </template>
 
 <script>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import documentsData from '../documents.json'
 import JsonDiffViewer from './JsonDiffViewer.vue'
@@ -123,18 +127,6 @@ export default {
     const showingJsonDiffViewer = ref(false)
     const searchQuery = ref('')
 
-    // クエリパラメータの変更を監視
-    watch(() => route.query.q, (newQuery) => {
-      searchQuery.value = newQuery || ''
-    })
-
-    // 検索クエリの変更を監視してURLを更新
-    watch(searchQuery, (newQuery) => {
-      router.replace({
-        query: { ...route.query, q: newQuery || undefined }
-      })
-    })
-
     onMounted(() => {
       const storedData = localStorage.getItem(STORAGE_KEY)
       if (storedData) {
@@ -148,7 +140,6 @@ export default {
         saveToLocalStorage(documentsData)
       }
 
-      // 初期表示時にクエリパラメータから検索ワードを設定
       searchQuery.value = route.query.q || ''
     })
 
@@ -485,7 +476,21 @@ export default {
 @media (max-width: 768px) {
   .documents-grid {
     grid-template-columns: 1fr;
-    gap: 16px;
+  }
+
+  .document-header {
+    padding: 12px;
+  }
+
+  .document-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+    margin-right: 12px;
+  }
+
+  .document-name {
+    font-size: 16px;
   }
 
   .document-actions {
@@ -493,8 +498,13 @@ export default {
   }
 
   .footer-buttons {
-    flex-direction: column;
     gap: 8px;
+  }
+}
+
+@media (min-width: 1920px) {
+  .documents-grid {
+    grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
   }
 }
 </style>

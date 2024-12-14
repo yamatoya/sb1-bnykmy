@@ -8,6 +8,8 @@ import RevisionPage from './components/RevisionPage.vue'
 import RevisionDetail from './components/RevisionDetail.vue'
 import RevisionEditorPage from './components/RevisionEditorPage.vue'
 import PublicCommentEditor from './components/PublicCommentEditor.vue'
+import Lists from './components/Lists.vue'
+import ListEditor from './components/ListEditor.vue'
 import { saveScrollPosition, scrollToTop, restoreScrollPosition } from './utils/scrollManager'
 import './styles/common.css'
 
@@ -39,23 +41,35 @@ const router = createRouter({
       path: '/public-comment/new',
       component: PublicCommentEditor,
       name: 'public-comment-new'
+    },
+    {
+      path: '/lists',
+      component: Lists,
+      name: 'lists'
+    },
+    {
+      path: '/lists/new',
+      component: ListEditor,
+      name: 'list-new'
+    },
+    {
+      path: '/lists/:id/edit',
+      component: ListEditor,
+      name: 'list-edit'
     }
   ]
 })
 
 // ナビゲーションガードの設定
 router.beforeEach((to, from, next) => {
-  // 現在のスクロール位置を保存
   saveScrollPosition(from)
   next()
 })
 
 router.afterEach((to, from) => {
-  // Tweetページに遷移する場合は一番上にスクロール
   if (to.name === 'tweet') {
     scrollToTop()
   } 
-  // 戻る場合は保存したスクロール位置に戻る
   else if (to.query.back === from.fullPath) {
     restoreScrollPosition(to)
   }
