@@ -23,7 +23,7 @@
             <i class="fas fa-times"></i>
           </button>
         </div>
-        <div v-if="hasSearchResults" class="search-actions">
+        <div v-if="searchQuery" class="search-actions">
           <button 
             class="action-button secondary-button"
             @click="selectAllSearchResults"
@@ -35,43 +35,45 @@
       </div>
 
       <div class="modal-body">
-        <div v-for="[docId, doc] in filteredDocumentsEntries" :key="docId">
-          <div v-if="docId !== currentDocumentId" class="document-section">
+        <div class="documents-list">
+          <div v-for="[docId, doc] in filteredDocumentsEntries" :key="docId" class="document-section">
             <div class="document-header">{{ formatDisplayName(doc.displayName) }}</div>
-            <div v-if="doc.public_comment">
-              <div v-for="question in filteredQuestions(doc.questions)" :key="question.id" class="tweet-item">
-                <label class="tweet-checkbox" v-if="question.id !== currentTweetId">
-                  <input 
-                    type="checkbox" 
-                    :value="`${docId}/${question.id}`"
-                    v-model="selectedTweets"
-                  >
-                  <div class="tweet-preview">
-                    <div class="tweet-content">
-                      <strong>質問 {{ question.index }}:</strong>
-                      <div v-html="highlightSearchTerms(question.question)"></div>
-                      <strong>回答:</strong>
-                      <div v-html="highlightSearchTerms(question.answer)"></div>
+            <div class="tweets-container">
+              <div v-if="doc.public_comment">
+                <div v-for="question in filteredQuestions(doc.questions)" :key="question.id" class="tweet-item">
+                  <label class="tweet-checkbox" v-if="question.id !== currentTweetId">
+                    <input 
+                      type="checkbox" 
+                      :value="`${docId}/${question.id}`"
+                      v-model="selectedTweets"
+                    >
+                    <div class="tweet-preview">
+                      <div class="tweet-content">
+                        <strong>質問 {{ question.index }}:</strong>
+                        <div v-html="highlightSearchTerms(question.question)"></div>
+                        <strong>回答:</strong>
+                        <div v-html="highlightSearchTerms(question.answer)"></div>
+                      </div>
                     </div>
-                  </div>
-                </label>
+                  </label>
+                </div>
               </div>
-            </div>
-            <div v-else>
-              <div v-for="tweet in filteredTweets(doc.tweets)" :key="tweet.id" class="tweet-item">
-                <label class="tweet-checkbox">
-                  <input 
-                    type="checkbox" 
-                    :value="`${docId}/${tweet.id}`"
-                    v-model="selectedTweets"
-                  >
-                  <div class="tweet-preview">
-                    <div class="tweet-content">
-                      <strong>{{ tweet.index }}:</strong>
-                      <div v-html="highlightSearchTerms(tweet.content)"></div>
+              <div v-else>
+                <div v-for="tweet in filteredTweets(doc.tweets)" :key="tweet.id" class="tweet-item">
+                  <label class="tweet-checkbox">
+                    <input 
+                      type="checkbox" 
+                      :value="`${docId}/${tweet.id}`"
+                      v-model="selectedTweets"
+                    >
+                    <div class="tweet-preview">
+                      <div class="tweet-content">
+                        <strong>{{ tweet.index }}:</strong>
+                        <div v-html="highlightSearchTerms(tweet.content)"></div>
+                      </div>
                     </div>
-                  </div>
-                </label>
+                  </label>
+                </div>
               </div>
             </div>
           </div>
@@ -79,8 +81,8 @@
       </div>
 
       <div class="modal-footer">
-        <button class="cancel-button" @click="$emit('close')">キャンセル</button>
-        <button class="save-button" @click="save">保存</button>
+        <button class="action-button secondary-button" @click="$emit('close')">キャンセル</button>
+        <button class="action-button primary-button" @click="save">保存</button>
       </div>
     </div>
   </div>
@@ -223,7 +225,7 @@ export default {
 
 .modal-content {
   background-color: white;
-  border-radius: 8px;
+  border-radius: 12px;
   width: 90%;
   max-width: 800px;
   max-height: 90vh;
@@ -240,7 +242,7 @@ export default {
   position: sticky;
   top: 0;
   background: white;
-  z-index: 1;
+  z-index: 3;
 }
 
 .modal-header h2 {
@@ -261,8 +263,8 @@ export default {
   border-bottom: 1px solid #e1e8ed;
   background-color: #ffffff;
   position: sticky;
-  top: 64px;
-  z-index: 1;
+  top: 69px;
+  z-index: 2;
 }
 
 .search-input-wrapper {
@@ -292,6 +294,12 @@ export default {
   box-shadow: 0 0 0 2px rgba(29, 161, 242, 0.1);
 }
 
+.search-actions {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
+}
+
 .clear-button {
   position: absolute;
   right: 12px;
@@ -308,48 +316,66 @@ export default {
   background-color: rgba(0, 0, 0, 0.1);
 }
 
-.search-actions {
-  margin-top: 12px;
-  display: flex;
-  justify-content: flex-end;
-}
-
 .modal-body {
   padding: 20px;
   overflow-y: auto;
   flex: 1;
 }
 
+.documents-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
 .document-section {
+  background: white;
+  border: 1px solid #e1e8ed;
+  border-radius: 12px;
+  overflow: hidden;
   margin-bottom: 24px;
 }
 
 .document-header {
-  margin-bottom: 12px;
-  padding: 8px;
+  padding: 12px 16px;
   font-weight: bold;
   color: #14171a;
   background: white;
-  position: sticky;
-  top: 120px;
-  z-index: 1;
   border-bottom: 1px solid #e1e8ed;
+  position: sticky;
+  z-index: 1;
+}
+
+.tweets-container {
+  position: relative;
+  padding-top: 1px;
+  margin-top: -1px;
+  background: white;
 }
 
 .tweet-item {
+  position: relative;
+  border-bottom: 1px solid #e1e8ed;
   background: white;
-  border: 1px solid #e1e8ed;
-  border-radius: 8px;
-  margin-bottom: 12px;
+}
+
+.tweet-item:last-child {
+  border-bottom: none;
 }
 
 .tweet-checkbox {
+  position: relative;
   display: flex;
   align-items: flex-start;
   gap: 12px;
   padding: 16px;
   cursor: pointer;
-  width: 100%;
+  transition: background-color 0.2s ease;
+  background: white;
+}
+
+.tweet-checkbox:hover {
+  background-color: #f8f9fa;
 }
 
 .tweet-checkbox input {
@@ -358,18 +384,20 @@ export default {
 
 .tweet-preview {
   flex-grow: 1;
+  min-width: 0;
 }
 
 .tweet-content {
   font-size: 14px;
   color: #4b5563;
   white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .tweet-content strong {
-  color: #14171a;
   display: block;
   margin-bottom: 4px;
+  color: #14171a;
 }
 
 .modal-footer {
@@ -381,62 +409,49 @@ export default {
   background: white;
   position: sticky;
   bottom: 0;
-  z-index: 1;
-}
-
-.save-button,
-.cancel-button {
-  padding: 8px 24px;
-  border-radius: 20px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.save-button {
-  background-color: #1da1f2;
-  color: white;
-  border: none;
-}
-
-.save-button:hover {
-  background-color: #1991db;
-}
-
-.cancel-button {
-  background-color: white;
-  color: #1da1f2;
-  border: 1px solid #1da1f2;
-}
-
-.cancel-button:hover {
-  background-color: rgba(29, 161, 242, 0.1);
+  z-index: 2;
 }
 
 @media (max-width: 768px) {
   .modal-content {
     width: 95%;
+    height: 95vh;
     max-height: 95vh;
+    border-radius: 8px;
   }
 
-  .tweet-checkbox {
-    padding: 12px;
+  .modal-header {
+    padding: 16px;
   }
 
   .search-container {
     padding: 12px 16px;
+    top: 61px;
+  }
+
+  .document-header {
+    top: 135px;
   }
 
   .search-input {
     font-size: 16px;
   }
 
-  .search-actions {
-    margin-top: 8px;
+  .modal-body {
+    padding: 16px;
+  }
+
+  .tweet-checkbox {
+    padding: 12px;
+  }
+
+  .modal-footer {
+    padding: 16px;
   }
 
   .action-button {
-    width: 100%;
+    padding: 8px 12px;
+    font-size: 14px;
   }
 }
 </style>
