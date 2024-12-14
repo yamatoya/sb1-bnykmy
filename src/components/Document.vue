@@ -21,9 +21,10 @@
         </div>
 
         <div class="tweets-list">
-          <div v-for="item in filteredItems" :key="item.id" class="card" @click="goToItem(item.id)">
-            <div class="card-header">
+          <div v-for="item in filteredItems" :key="item.id" class="card clickable">
+            <div class="card-header" @click="handleCardClick($event, item)">
               <span class="index">{{ item.index }}</span>
+              <i class="fas fa-chevron-right card-arrow"></i>
             </div>
             <div v-if="hasContent(item)" class="card-content">
               <template v-if="document.public_comment">
@@ -33,14 +34,14 @@
                       <i class="fas fa-question-circle"></i>
                       質問
                     </div>
-                    <p class="tweet-content" v-html="highlightContent(item.question)"></p>
+                    <p class="tweet-content clickable" @click="handleContentClick($event, item)" v-html="highlightContent(item.question)"></p>
                   </div>
                   <div v-if="item.answer" class="answer">
                     <div class="qa-label">
                       <i class="fas fa-comment-dots"></i>
                       回答
                     </div>
-                    <p class="tweet-content" v-html="highlightContent(item.answer)"></p>
+                    <p class="tweet-content clickable" @click="handleContentClick($event, item)" v-html="highlightContent(item.answer)"></p>
                   </div>
                   <div v-if="item.links?.length" class="meta-info">
                     <span class="link-count">
@@ -51,7 +52,7 @@
                 </div>
               </template>
               <template v-else>
-                <p v-if="item.content" class="tweet-content" v-html="highlightContent(item.content)"></p>
+                <p v-if="item.content" class="tweet-content clickable" @click="handleContentClick($event, item)" v-html="highlightContent(item.content)"></p>
                 <div v-if="hasMetaInfo(item)" class="meta-info">
                   <span v-if="item.links?.length" class="link-count">
                     <i class="fas fa-link"></i>
@@ -139,6 +140,19 @@ export default {
       return (item.links?.length > 0) || (item.public_comment_links?.length > 0)
     }
 
+    const handleCardClick = (event, item) => {
+      goToItem(item.id)
+    }
+
+    const handleContentClick = (event, item) => {
+      // テキスト選択時は遷移しない
+      const selection = window.getSelection()
+      if (selection.toString().length > 0) {
+        return
+      }
+      goToItem(item.id)
+    }
+
     const goToItem = (itemId) => {
       router.push({
         path: `/document/${route.params.id}/${itemId}`,
@@ -169,7 +183,8 @@ export default {
       formatDisplayName,
       formatDate,
       highlightContent,
-      goToItem,
+      handleCardClick,
+      handleContentClick,
       hasMetaInfo,
       hasContent
     }
@@ -207,6 +222,33 @@ export default {
   border-top: none;
 }
 
+.card-header {
+  position: relative;
+  padding-right: 40px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.card-header:hover {
+  background-color: #f8f9fa;
+}
+
+.card-arrow {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #657786;
+  font-size: 14px;
+  opacity: 0.5;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.card-header:hover .card-arrow {
+  opacity: 1;
+  transform: translateY(-50%) translateX(4px);
+}
+
 .index {
   font-weight: bold;
   color: #14171a;
@@ -215,15 +257,24 @@ export default {
 .tweet-content {
   font-size: 16px;
   line-height: 1.5;
-  color: #2d3748;
+  margin-bottom: 20px;
   white-space: pre-wrap;
-  word-break: break-word;
-  margin: 0;
+  user-select: text;
 }
 
-/* QAコンテンツのスタイル */
+.tweet-content.clickable {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.tweet-content.clickable:hover {
+  background-color: #f8f9fa;
+}
+
 .qa-content {
   background-color: #ffffff;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 .question {
@@ -293,24 +344,10 @@ export default {
   color: #1da1f2;
 }
 
-.error-message {
-  text-align: center;
-  padding: 40px;
-  color: #e0245e;
-  font-weight: bold;
-  background-color: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
 @media (max-width: 768px) {
-  .qa-content {
-    border-radius: 0;
-  }
-
   .question,
   .answer {
-    padding: 16px;
+    padding: 15px;
   }
 
   .tweet-content {
@@ -319,14 +356,6 @@ export default {
 
   .meta-info {
     padding: 12px;
-  }
-
-  .tweets-list .card:first-child {
-    border-radius: 0;
-  }
-
-  .tweets-list .card:last-child {
-    border-radius: 0;
   }
 }
 </style>
