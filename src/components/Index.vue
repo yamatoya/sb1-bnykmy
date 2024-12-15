@@ -19,7 +19,7 @@
       <div class="documents-grid">
         <div v-for="(doc, id) in filteredDocuments" :key="id" class="card">
           <router-link :to="`/document/${id}`" class="document-header">
-            <div class="document-icon">{{ doc.displayName.charAt(0) }}</div>
+            <div class="document-icon">{{ getFirstChar(doc.displayName) }}</div>
             <div class="document-info">
               <div class="document-name">{{ formatDisplayName(doc.displayName) }}</div>
               <div v-if="doc.revisions" class="revision-badge">
@@ -290,6 +290,10 @@ export default {
       return highlighted
     }
 
+    const getFirstChar = (displayName) => {
+      return displayName ? displayName.charAt(0) : '?'
+    }
+
     const downloadDocuments = () => {
       const jsonString = JSON.stringify(documents.value, null, 2)
       const blob = new Blob([jsonString], { type: 'application/json' })
@@ -320,6 +324,7 @@ export default {
       documents,
       showingJsonDiffViewer,
       formatDisplayName,
+      getFirstChar,
       getMatchingContent,
       highlightSearchTerms,
       downloadDocuments,
