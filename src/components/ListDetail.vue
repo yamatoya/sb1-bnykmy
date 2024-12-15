@@ -1,3 +1,4 @@
+```vue
 <template>
   <div class="page">
     <div class="container">
@@ -24,14 +25,20 @@
         </div>
 
         <div class="tweets-list">
-          <div v-for="tweetPath in list.tweets" :key="tweetPath" class="card">
+          <router-link
+            v-for="tweetPath in list.tweets"
+            :key="tweetPath"
+            :to="getTweetLink(tweetPath)"
+            class="card tweet-link"
+          >
             <div class="card-header">
               <span class="document-name">{{ getDocumentName(tweetPath) }}</span>
+              <span class="tweet-index">{{ getTweetIndex(tweetPath) }}</span>
             </div>
             <div class="card-content">
               <div class="tweet-content" v-html="formatTweetContent(tweetPath)"></div>
             </div>
-          </div>
+          </router-link>
         </div>
       </div>
       <div v-else class="error-message">
@@ -60,6 +67,19 @@ export default {
       return formatDisplayName(documents.value?.[documentId]?.displayName)
     }
 
+    const getTweetIndex = (tweetPath) => {
+      const [documentId, tweetId] = tweetPath.split('/')
+      const doc = documents.value?.[documentId]
+      if (!doc) return ''
+
+      if (doc.public_comment) {
+        const question = doc.questions.find(q => q.id === tweetId)
+        return question ? `質問 ${question.index}` : ''
+      }
+      const tweet = doc.tweets.find(t => t.id === tweetId)
+      return tweet ? tweet.index : ''
+    }
+
     const formatTweetContent = (tweetPath) => {
       const [documentId, tweetId] = tweetPath.split('/')
       const doc = documents.value?.[documentId]
@@ -86,6 +106,15 @@ export default {
       return tweet ? tweet.content : ''
     }
 
+    const getTweetLink = (tweetPath) => {
+      const [documentId, tweetId] = tweetPath.split('/')
+      return {
+        name: 'tweet',
+        params: { documentId, tweetId },
+        query: { back: route.fullPath }
+      }
+    }
+
     const loadData = () => {
       const storedData = localStorage.getItem(STORAGE_KEY)
       if (storedData) {
@@ -106,7 +135,9 @@ export default {
     return {
       list,
       getDocumentName,
+      getTweetIndex,
       formatTweetContent,
+      getTweetLink,
       formatDate
     }
   }
@@ -161,20 +192,45 @@ export default {
   gap: 20px;
 }
 
+.tweet-link {
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.tweet-link:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .document-name {
   font-weight: bold;
   color: #14171a;
 }
 
+.tweet-index {
+  color: #657786;
+  font-size: 14px;
+}
+
 .tweet-content {
   white-space: pre-wrap;
   word-break: break-word;
+  color: #4b5563;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .qa-content {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .question,
@@ -205,5 +261,12 @@ export default {
     gap: 12px;
     align-items: flex-start;
   }
+
+  .card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
 }
 </style>
+```
