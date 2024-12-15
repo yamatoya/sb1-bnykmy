@@ -25,20 +25,24 @@
         </div>
 
         <div class="tweets-list">
-          <router-link
-            v-for="tweetPath in list.tweets"
-            :key="tweetPath"
-            :to="getTweetLink(tweetPath)"
-            class="card tweet-link"
-          >
-            <div class="card-header">
-              <span class="document-name">{{ getDocumentName(tweetPath) }}</span>
-              <span class="tweet-index">{{ getTweetIndex(tweetPath) }}</span>
-            </div>
-            <div class="card-content">
-              <div class="tweet-content" v-html="formatTweetContent(tweetPath)"></div>
-            </div>
-          </router-link>
+          <div v-for="tweetPath in list.tweets" :key="tweetPath" class="card tweet-container">
+            <router-link 
+              :to="getTweetLink(tweetPath)"
+              class="tweet-link"
+            >
+              <div class="card-header">
+                <span class="document-name">{{ getDocumentName(tweetPath) }}</span>
+                <span class="tweet-index">{{ getTweetIndex(tweetPath) }}</span>
+              </div>
+              <div class="card-content">
+                <div class="tweet-content" v-html="formatTweetContent(tweetPath)"></div>
+              </div>
+            </router-link>
+            <tweet-comments 
+              :list-id="list.id"
+              :tweet-path="tweetPath"
+            />
+          </div>
         </div>
       </div>
       <div v-else class="error-message">
@@ -52,11 +56,15 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { formatDate, formatDisplayName } from '../utils/formatters'
+import TweetComments from './TweetComments.vue'
 
 const STORAGE_KEY = 'legal-documents-data'
 
 export default {
   name: 'ListDetail',
+  components: {
+    TweetComments
+  },
   setup() {
     const route = useRoute()
     const documents = ref(null)
@@ -192,21 +200,26 @@ export default {
   gap: 20px;
 }
 
+.tweet-container {
+  display: flex;
+  flex-direction: column;
+}
+
 .tweet-link {
   text-decoration: none;
   color: inherit;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  padding: 16px;
 }
 
 .tweet-link:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  background-color: #f8f9fa;
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 12px;
 }
 
 .document-name {
@@ -266,6 +279,10 @@ export default {
     flex-direction: column;
     align-items: flex-start;
     gap: 4px;
+  }
+
+  .tweet-link {
+    padding: 12px;
   }
 }
 </style>
