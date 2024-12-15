@@ -43,21 +43,12 @@
             ツイートが追加されていません
           </div>
 
-          <div v-else class="selected-tweets">
-            <div v-for="tweetPath in selectedTweets" :key="tweetPath" class="tweet-item">
-              <div class="tweet-preview">
-                <div class="tweet-header">
-                  <span class="document-name">{{ getDocumentName(tweetPath) }}</span>
-                  <button type="button" class="remove-button" @click="removeTweet(tweetPath)">
-                    <i class="fas fa-times"></i>
-                  </button>
-                </div>
-                <div class="tweet-content">
-                  {{ getTweetContent(tweetPath) }}
-                </div>
-              </div>
-            </div>
-          </div>
+          <draggable-tweet-list
+            v-else
+            v-model="selectedTweets"
+            :documents="documents"
+            @remove="removeTweet"
+          />
         </div>
 
         <div class="form-actions">
@@ -84,14 +75,15 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { v4 as uuidv4 } from 'uuid'
 import TweetSelector from './TweetSelector.vue'
-import { formatDisplayName } from '../utils/formatters'
+import DraggableTweetList from './DraggableTweetList.vue'
 
 const STORAGE_KEY = 'legal-documents-data'
 
 export default {
   name: 'ListEditor',
   components: {
-    TweetSelector
+    TweetSelector,
+    DraggableTweetList
   },
   setup() {
     const route = useRoute()
@@ -107,24 +99,6 @@ export default {
     const isValid = computed(() => {
       return title.value && selectedTweets.value.length > 0
     })
-
-    const getDocumentName = (tweetPath) => {
-      const [documentId] = tweetPath.split('/')
-      return formatDisplayName(documents.value?.[documentId]?.displayName)
-    }
-
-    const getTweetContent = (tweetPath) => {
-      const [documentId, tweetId] = tweetPath.split('/')
-      const doc = documents.value?.[documentId]
-      if (!doc) return ''
-
-      if (doc.public_comment) {
-        const question = doc.questions.find(q => q.id === tweetId)
-        return question ? `${question.question}\n${question.answer}` : ''
-      }
-      const tweet = doc.tweets.find(t => t.id === tweetId)
-      return tweet ? tweet.content : ''
-    }
 
     const handleTweetsSelected = (tweets) => {
       selectedTweets.value = tweets
@@ -212,8 +186,6 @@ export default {
       showTweetSelector,
       isEditing,
       isValid,
-      getDocumentName,
-      getTweetContent,
       handleTweetsSelected,
       removeTweet,
       saveList
@@ -289,56 +261,6 @@ textarea.form-control {
   font-style: italic;
 }
 
-.selected-tweets {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.tweet-item {
-  background: #f8f9fa;
-  border: 1px solid #e1e8ed;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.tweet-preview {
-  padding: 16px;
-}
-
-.tweet-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.document-name {
-  font-weight: bold;
-  color: #14171a;
-}
-
-.remove-button {
-  background: none;
-  border: none;
-  color: #e0245e;
-  cursor: pointer;
-  padding: 8px;
-  border-radius: 50%;
-  transition: background-color 0.2s ease;
-}
-
-.remove-button:hover {
-  background-color: rgba(224, 36, 94, 0.1);
-}
-
-.tweet-content {
-  font-size: 14px;
-  color: #4b5563;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
 .form-actions {
   margin-top: 40px;
   display: flex;
@@ -347,6 +269,14 @@ textarea.form-control {
 }
 
 @media (max-width: 768px) {
+  .page-header {
+    padding: 16px;
+  }
+
+  .page-content {
+    padding: 20px;
+  }
+
   .editor-form {
     padding: 16px;
   }
@@ -354,7 +284,6 @@ textarea.form-control {
   .section-header {
     flex-direction: column;
     gap: 12px;
-    align-items: stretch;
   }
 
   .form-actions {
