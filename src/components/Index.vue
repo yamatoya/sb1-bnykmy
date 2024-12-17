@@ -73,6 +73,10 @@
       <footer class="footer">
         <div class="footer-content">
           <div class="footer-buttons">
+            <router-link to="/lists" class="action-button primary-button">
+              <i class="fas fa-list"></i>
+              <span>リスト一覧</span>
+            </router-link>
             <router-link to="/public-comment/new" class="action-button primary-button">
               <i class="fas fa-plus"></i>
               <span>パブリックコメントを追加</span>
@@ -127,12 +131,7 @@ export default {
       const storedData = localStorage.getItem(STORAGE_KEY)
       if (storedData) {
         try {
-          const parsedData = JSON.parse(storedData)
-          // Skip arrays that start with "lists"
-          const filteredData = Object.fromEntries(
-            Object.entries(parsedData).filter(([key]) => !key.startsWith('lists'))
-          )
-          documents.value = filteredData
+          documents.value = JSON.parse(storedData)
         } catch (e) {
           console.error('Failed to parse stored documents:', e)
           saveToLocalStorage(documentsData)
