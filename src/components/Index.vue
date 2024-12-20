@@ -131,7 +131,12 @@ export default {
       const storedData = localStorage.getItem(STORAGE_KEY)
       if (storedData) {
         try {
-          documents.value = JSON.parse(storedData)
+          const parsedData = JSON.parse(storedData)
+          // Skip arrays that start with "lists"
+          const filteredData = Object.fromEntries(
+            Object.entries(parsedData).filter(([key]) => !key.startsWith('lists'))
+          )
+          documents.value = filteredData
         } catch (e) {
           console.error('Failed to parse stored documents:', e)
           saveToLocalStorage(documentsData)
