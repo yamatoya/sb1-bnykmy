@@ -39,6 +39,9 @@
           <button class="copy-url-btn" @click="copyUrl">
             <i class="fas fa-link"></i> URLをコピー
           </button>
+          <button class="add-link-btn" @click="showLinkEditor = true">
+            <i class="fas fa-plus"></i> 関連リンクを追加
+          </button>
           <button v-if="document.public_comment" class="add-related-btn" @click="showTweetSelector = true">
             <i class="fas fa-plus"></i> 関連ツイートを追加
           </button>
@@ -139,6 +142,15 @@
       @save="saveRevisionLinks"
       @close="showRevisionSelector = false"
     />
+
+    <tweet-link-editor
+      v-if="showLinkEditor"
+      :documents="documents"
+      :current-document-id="route.params.documentId"
+      :current-tweet-id="route.params.tweetId"
+      @save="saveTweetLink"
+      @close="showLinkEditor = false"
+    />
   </div>
 </template>
 
@@ -148,6 +160,7 @@ import { useRoute, useRouter } from 'vue-router'
 import TweetLinks from './TweetLinks.vue'
 import RevisionSelector from './RevisionSelector.vue'
 import TweetSelector from './TweetSelector.vue'
+import TweetLinkEditor from './TweetLinkEditor.vue'
 import { diffChars } from 'diff'
 import { formatDisplayName, formatText } from '../utils/formatters'
 
@@ -158,7 +171,8 @@ export default {
   components: {
     TweetLinks,
     RevisionSelector,
-    TweetSelector
+    TweetSelector,
+    TweetLinkEditor
   },
   setup() {
     const route = useRoute()
@@ -168,6 +182,7 @@ export default {
     const tweet = ref(null)
     const showRevisionSelector = ref(false)
     const showTweetSelector = ref(false)
+    const showLinkEditor = ref(false)
 
     const currentUrl = computed(() => `/document/${route.params.documentId}/${route.params.tweetId}`)
     const backUrl = computed(() => route.query.back || `/document/${route.params.documentId}`)
@@ -310,6 +325,33 @@ export default {
       }
     }
 
+    const saveTweetLink = (link) => {
+      const storedData = localStorage.getItem(STORAGE_KEY)
+      if (storedData) {
+        try {
+          const docs = JSON.parse(storedData)
+          const doc = docs[route.params.documentId]
+          const currentTweet = doc.public_comment ?
+            doc.questions.find(t => t.id === route.params.tweetId) :
+            doc.tweets.find(t => t.id === route.params.tweetId)
+          
+          if (currentTweet) {
+            if (!currentTweet.links) {
+              currentTweet.links = []
+            }
+            currentTweet.links.push(link)
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(docs))
+            
+            document.value = doc
+            documents.value = docs
+            tweet.value = currentTweet
+          }
+        } catch (e) {
+          console.error('Failed to save tweet link:', e)
+        }
+      }
+    }
+
     const loadData = () => {
       const storedData = localStorage.getItem(STORAGE_KEY)
       if (storedData) {
@@ -343,6 +385,7 @@ export default {
       backUrl,
       showRevisionSelector,
       showTweetSelector,
+      showLinkEditor,
       getRevisionContent,
       getRevisionArticles,
       getRelatedTweetDocument,
@@ -351,6 +394,7 @@ export default {
       copyUrl,
       saveRevisionLinks,
       saveRelatedTweets,
+      saveTweetLink,
       highlightChanges,
       highlightContent,
       formatDisplayName,
@@ -430,7 +474,8 @@ export default {
 
 .copy-url-btn,
 .add-revision-link-btn,
-.add-related-btn {
+.add-related-btn,
+.add-link-btn {
   background-color: #1da1f2;
   color: white;
   border: none;
@@ -449,6 +494,14 @@ export default {
 
 .add-related-btn {
   background-color: #794bc4;
+}
+
+.add-link-btn {
+  background-color: #794bc4;
+}
+
+.add-link-btn:hover {
+  background-color: #6b44b0;
 }
 
 .related-tweets,
@@ -683,7 +736,8 @@ export default {
 
   .copy-url-btn,
   .add-revision-link-btn,
-  .add-related-btn {
+  .add-related-btn,
+  .add-link-btn {
     flex: 1;
     justify-content: center;
   }
