@@ -1,7 +1,1 @@
-Provide the full, unabridged code for each request
-For all designs I ask you to make, have them be beautiful, not cookie cutter. Make webpages that are fully featured and worthy for production.
-
-Anytime a change affects the external API follow these steps:
-1. updating the examples in the readme
-2. create/update the unit tests
-3. do the implementation
+When outputting to a file based on a request, please ensure that the output is complete without any omissions.
