@@ -82,6 +82,30 @@
           <tweet-links :links="tweet.links" :base-url="currentUrl" />
         </div>
 
+        <!-- パブリックコメント -->
+        <div v-if="tweet.public_comment_links && tweet.public_comment_links.length > 0" class="public-comments">
+          <h3>関連するパブリックコメント:</h3>
+          <div v-for="link in tweet.public_comment_links" :key="link.url" class="public-comment-item">
+            <div v-if="getPublicCommentContent(link.url)" class="public-comment-content">
+              <div class="public-comment-header">
+                <span class="document-name">{{ formatDisplayName(getPublicCommentDocument(link.url)?.displayName) }}</span>
+                <span class="tweet-index">{{ getPublicCommentContent(link.url)?.index }}</span>
+              </div>
+              <div class="qa-content">
+                <div class="question">
+                  <strong>質問:</strong>
+                  <div v-html="formatText(getPublicCommentContent(link.url)?.question)"></div>
+                </div>
+                <div class="answer">
+                  <strong>回答:</strong>
+                  <div v-html="formatText(getPublicCommentContent(link.url)?.answer)"></div>
+                </div>
+              </div>
+              <div class="link-text">{{ link.text }}</div>
+            </div>
+          </div>
+        </div>
+
         <!-- 改訂履歴 -->
         <div v-if="tweet.revision && tweet.revision.length > 0" class="revision-links">
           <h3>改訂履歴:</h3>
@@ -247,6 +271,18 @@ export default {
       return doc.tweets.find(t => t.id === tweetId)
     }
 
+    const getPublicCommentDocument = (url) => {
+      const [documentId] = url.split('/')
+      return documents.value?.[documentId]
+    }
+
+    const getPublicCommentContent = (url) => {
+      const [documentId, questionId] = url.split('/')
+      const doc = documents.value?.[documentId]
+      if (!doc || !doc.public_comment) return null
+      return doc.questions.find(q => q.id === questionId)
+    }
+
     const isPublicComment = (doc) => {
       return doc?.public_comment === true
     }
@@ -390,6 +426,8 @@ export default {
       getRevisionArticles,
       getRelatedTweetDocument,
       getRelatedTweetContent,
+      getPublicCommentDocument,
+      getPublicCommentContent,
       isPublicComment,
       copyUrl,
       saveRevisionLinks,
@@ -506,13 +544,15 @@ export default {
 
 .related-tweets,
 .tweet-links,
-.revision-links {
+.revision-links,
+.public-comments {
   margin-top: 20px;
   border-top: 1px solid #e1e8ed;
   padding-top: 20px;
 }
 
-.related-tweet-item {
+.related-tweet-item,
+.public-comment-item {
   background-color: #f8f9fa;
   border: 1px solid #e1e8ed;
   border-radius: 8px;
@@ -520,7 +560,8 @@ export default {
   padding: 15px;
 }
 
-.related-tweet-header {
+.related-tweet-header,
+.public-comment-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -705,6 +746,14 @@ export default {
 
 .qa-label i {
   font-size: 16px;
+}
+
+.link-text {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e1e8ed;
+  color: #657786;
+  font-size: 14px;
 }
 
 @media (max-width: 768px) {
