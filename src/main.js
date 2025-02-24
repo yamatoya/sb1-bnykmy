@@ -8,6 +8,7 @@ import RevisionPage from './components/RevisionPage.vue'
 import RevisionDetail from './components/RevisionDetail.vue'
 import RevisionEditorPage from './components/RevisionEditorPage.vue'
 import PublicCommentEditor from './components/PublicCommentEditor.vue'
+import DocumentEditor from './components/DocumentEditor.vue'
 import Lists from './components/Lists.vue'
 import ListEditor from './components/ListEditor.vue'
 import ListDetail from './components/ListDetail.vue'
@@ -18,6 +19,8 @@ const router = createRouter({
   history: createWebHistory(),
   routes: [
     { path: '/', component: Index },
+    { path: '/document/new', component: DocumentEditor },
+    { path: '/document/:id/edit', component: DocumentEditor },
     { path: '/document/:id', component: Document },
     { path: '/document/:documentId/:tweetId', component: Tweet, name: 'tweet' },
     { path: '/revisions/:documentId', component: RevisionPage, name: 'revisions' },

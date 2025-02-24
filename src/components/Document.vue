@@ -6,8 +6,33 @@
           <router-link to="/" class="back-link">
             <i class="fas fa-arrow-left"></i>
           </router-link>
-          <h1>{{ formatDisplayName(document.displayName) }}</h1>
+          <div class="header-content">
+            <h1>{{ formatDisplayName(document.displayName) }}</h1>
+            <router-link 
+              :to="`/document/${route.params.id}/edit`" 
+              class="edit-button"
+            >
+              <i class="fas fa-pencil-alt"></i>
+              編集
+            </router-link>
+          </div>
         </header>
+
+        <div v-if="document.description || document.url" class="document-meta">
+          <p v-if="document.description" class="document-description">
+            {{ document.description }}
+          </p>
+          <a 
+            v-if="document.url" 
+            :href="document.url" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            class="document-url"
+          >
+            <i class="fas fa-external-link-alt"></i>
+            原文を表示
+          </a>
+        </div>
 
         <div class="search-container">
           <input
@@ -186,7 +211,8 @@ export default {
       handleCardClick,
       handleContentClick,
       hasMetaInfo,
-      hasContent
+      hasContent,
+      route
     }
   }
 }
@@ -194,6 +220,68 @@ export default {
 
 <style scoped>
 @import '../styles/common.css';
+
+.page-header {
+  padding: 20px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.header-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.document-meta {
+  background-color: #ffffff;
+  border: 1px solid #e1e8ed;
+  border-radius: 12px;
+  padding: 16px;
+  margin: 20px 0;
+}
+
+.document-description {
+  color: #14171a;
+  font-size: 14px;
+  margin: 0 0 8px 0;
+}
+
+.document-url {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #1da1f2;
+  text-decoration: none;
+  font-size: 14px;
+  transition: opacity 0.2s ease;
+}
+
+.document-url:hover {
+  text-decoration: underline;
+}
+
+.edit-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background-color: #e8f5fd;
+  color: #1da1f2;
+  border: none;
+  border-radius: 20px;
+  font-size: 14px;
+  text-decoration: none;
+  transition: background-color 0.2s ease;
+}
+
+.edit-button:hover {
+  background-color: #d8effd;
+}
 
 .tweets-list {
   margin: 20px 0;
@@ -348,6 +436,19 @@ export default {
   .question,
   .answer {
     padding: 15px;
+  }
+
+  .document-meta {
+    padding: 12px;
+    margin: 16px 0;
+  }
+
+  .document-description {
+    font-size: 13px;
+  }
+
+  .document-url {
+    font-size: 13px;
   }
 
   .tweet-content {

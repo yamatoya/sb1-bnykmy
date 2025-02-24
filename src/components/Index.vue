@@ -73,6 +73,10 @@
       <footer class="footer">
         <div class="footer-content">
           <div class="footer-buttons">
+            <router-link to="/document/new" class="action-button primary-button">
+              <i class="fas fa-plus"></i>
+              <span>新規文書を作成</span>
+            </router-link>
             <router-link to="/lists" class="action-button primary-button">
               <i class="fas fa-list"></i>
               <span>リスト一覧</span>

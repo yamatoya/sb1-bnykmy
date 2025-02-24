@@ -1,235 +1,300 @@
 <template>
-  <div class="modal-overlay" @click="$emit('close')">
-    <div class="modal-content" @click.stop>
-      <div class="modal-header">
-        <h2>{{ initialRevision ? '改訂履歴の編集' : '改訂履歴の追加' }}</h2>
-        <button class="close-button" @click="$emit('close')">&times;</button>
-      </div>
+  <div class="editor-page">
+    <header class="page-header">
+      <router-link to="/" class="back-link">
+        <i class="fas fa-arrow-left"></i>
+        <span>戻る</span>
+      </router-link>
+      <h1>{{ isEditing ? '文書の編集' : '新規文書の作成' }}</h1>
+    </header>
 
-      <div class="modal-body">
+    <main class="page-content">
+      <form @submit.prevent="saveDocument" class="editor-form">
         <div class="form-group">
-          <label>対象文書</label>
-          <select v-model="documentId" class="form-control" :disabled="!!initialRevision">
-            <option value="">文書を選択してください</option>
-            <option v-for="(doc, id) in documents" :key="id" :value="id">
-              {{ doc.displayName }}
-            </option>
-          </select>
+          <label>文書名</label>
+          <input 
+            type="text" 
+            v-model="displayName" 
+            class="form-control" 
+            placeholder="文書名を入力"
+            required
+          />
         </div>
 
         <div class="form-group">
-          <label>改訂タイトル</label>
-          <input type="text" v-model="title" class="form-control" placeholder="例: 令和5年改正" />
+          <label>概要</label>
+          <textarea 
+            v-model="description" 
+            class="form-control" 
+            rows="3" 
+            placeholder="文書の概要を入力"
+          ></textarea>
         </div>
 
         <div class="form-group">
-          <label>改訂日</label>
-          <input type="date" v-model="date" class="form-control" />
+          <label>原文URL</label>
+          <input 
+            type="url" 
+            v-model="url" 
+            class="form-control" 
+            placeholder="https://..."
+          />
         </div>
 
-        <div class="form-group">
-          <label>改訂説明</label>
-          <textarea v-model="description" class="form-control" rows="3" placeholder="改訂の概要を入力してください"></textarea>
-        </div>
+        <div class="tweets-section">
+          <div class="section-header">
+            <h2>条文</h2>
+            <button type="button" class="add-button" @click="addTweet">
+              <i class="fas fa-plus"></i>
+              条文を追加
+            </button>
+          </div>
 
-        <div class="form-group">
-          <label>改訂ソースURL</label>
-          <input type="url" v-model="sourceUrl" class="form-control" placeholder="https://..." />
-        </div>
+          <div v-if="tweets.length === 0" class="no-items">
+            条文が追加されていません
+          </div>
 
-        <div class="articles-section">
-          <h3>条文の編集</h3>
-          <button class="add-article-button" @click="addArticle">
-            <i class="fas fa-plus"></i> 条文を追加
-          </button>
-
-          <div v-for="(article, index) in articles" :key="article.id" class="article-item">
-            <div class="article-header">
-              <h4>条文 {{ index + 1 }}</h4>
-              <button class="remove-article-button" @click="removeArticle(index)">
+          <div v-else v-for="(tweet, index) in tweets" :key="tweet.id" class="tweet-item">
+            <div class="tweet-header">
+              <h3>条文 {{ index + 1 }}</h3>
+              <button type="button" class="remove-button" @click="removeTweet(index)">
                 <i class="fas fa-trash"></i>
               </button>
             </div>
 
-            <div class="article-content">
+            <div class="tweet-content">
               <div class="form-group">
-                <label>状態</label>
-                <select v-model="article.status" class="form-control">
-                  <option value="改正">改正</option>
-                  <option value="新設">新設</option>
-                  <option value="削除">削除</option>
-                </select>
+                <label>インデックス</label>
+                <input 
+                  type="text" 
+                  v-model="tweet.index" 
+                  class="form-control"
+                  placeholder="例: 第1条"
+                  required
+                />
               </div>
 
-              <div class="form-group" v-if="article.status !== '新設'">
-                <label>改正前</label>
-                <textarea v-model="article.before" class="form-control" rows="4"></textarea>
-              </div>
-
-              <div class="form-group" v-if="article.status !== '削除'">
-                <label>改正後</label>
-                <textarea v-model="article.after" class="form-control" rows="4"></textarea>
+              <div class="form-group">
+                <label>内容</label>
+                <div class="input-group">
+                  <textarea 
+                    v-model="tweet.content" 
+                    class="form-control" 
+                    rows="4"
+                    placeholder="内容を入力（省略可）"
+                  ></textarea>
+                  <button 
+                    type="button" 
+                    class="format-button" 
+                    @click="formatContent(index)"
+                  >
+                    <i class="fas fa-magic"></i>
+                    フォーマット
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div class="modal-footer">
-        <button class="cancel-button" @click="$emit('close')">キャンセル</button>
-        <button class="save-button" @click="saveRevision" :disabled="!isValid">保存</button>
-      </div>
-    </div>
+        <div class="pre-action-buttons">
+          <button type="button" class="add-tweet-button" @click="addTweet">
+            <i class="fas fa-plus"></i>
+            条文を追加
+          </button>
+        </div>
+
+        <div class="form-actions">
+          <router-link to="/" class="cancel-button">キャンセル</router-link>
+          <button type="submit" class="save-button" :disabled="!isValid">保存</button>
+        </div>
+      </form>
+    </main>
   </div>
 </template>
 
 <script>
 import { ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { v4 as uuidv4 } from 'uuid'
 
-export default {
-  name: 'RevisionEditor',
-  props: {
-    documents: {
-      type: Object,
-      required: true
-    },
-    initialRevision: {
-      type: Object,
-      default: null
-    },
-    selectedDocument: {
-      type: String,
-      default: ''
-    }
-  },
-  setup(props, { emit }) {
-    const documentId = ref(props.selectedDocument)
-    const title = ref('')
-    const date = ref('')
-    const description = ref('')
-    const sourceUrl = ref('')
-    const articles = ref([])
+const STORAGE_KEY = 'legal-documents-data'
 
-    onMounted(() => {
-      if (props.initialRevision) {
-        // 既存の改訂データを読み込む
-        documentId.value = props.selectedDocument
-        title.value = props.initialRevision.title
-        date.value = props.initialRevision.date
-        description.value = props.initialRevision.description || ''
-        sourceUrl.value = props.initialRevision.sourceUrl || ''
-        articles.value = props.initialRevision.articles.map(article => ({
-          ...article,
-          id: article.id || uuidv4()
-        }))
+export default {
+  name: 'DocumentEditor',
+  setup() {
+    const route = useRoute()
+    const router = useRouter()
+    const displayName = ref('')
+    const tweets = ref([])
+    const description = ref('')
+    const url = ref('')
+    const documentId = ref('')
+
+    const formatContent = (index) => {
+      if (tweets.value[index]) {
+        let content = tweets.value[index].content || ''
+        
+        // 基本的なクリーンアップ
+        content = content.trim()
+        
+        // 全角文字の正規化
+        content = content.replace(/　/g, ' ')
+        content = content.replace(/[！]/g, '!')
+        content = content.replace(/[？]/g, '?')
+        content = content.replace(/[（]/g, '(')
+        content = content.replace(/[）]/g, ')')
+        content = content.replace(/[「]/g, '『')
+        content = content.replace(/[」]/g, '』')
+        
+        // スペースの正規化
+        content = content.replace(/ +/g, ' ')
+        
+        // 改行を削除
+        content = content.replace(/\r\n|\r|\n/g, '')
+        
+        // 箇条書きの整形
+        content = content.replace(/([①-⑳]|[0-9]+\.)/g, ' $1')
+        
+        tweets.value[index].content = content
       }
-    })
+    }
+
+    const isEditing = computed(() => route.params.id !== undefined)
 
     const isValid = computed(() => {
-      return documentId.value &&
-             title.value &&
-             date.value &&
-             articles.value.length > 0 &&
-             articles.value.every(article => {
-               if (article.status === '新設') return !!article.after
-               if (article.status === '削除') return !!article.before
-               return article.before && article.after
-             })
+      return displayName.value && tweets.value.length > 0 && 
+             tweets.value.every(tweet => tweet.index)
     })
 
-    const addArticle = () => {
-      articles.value.push({
-        id: uuidv4(),
-        status: '改正',
-        before: '',
-        after: ''
+    const addTweet = () => {
+      tweets.value.push({
+        id: uuidv4().substring(0, 8),
+        index: '',
+        content: ''
       })
     }
 
-    const removeArticle = (index) => {
-      articles.value.splice(index, 1)
+    const removeTweet = (index) => {
+      tweets.value.splice(index, 1)
     }
 
-    const saveRevision = () => {
-      const revision = {
-        id: props.initialRevision?.id || uuidv4(),
-        title: title.value,
-        date: date.value,
-        description: description.value,
-        sourceUrl: sourceUrl.value,
-        articles: articles.value
+    const saveDocument = () => {
+      const id = documentId.value || uuidv4().substring(0, 8)
+      const newDocument = {
+        accountId: id,
+        displayName: displayName.value,
+        description: description.value || null,
+        url: url.value || null,
+        tweets: tweets.value,
       }
 
-      emit('save', revision)
+      try {
+        const storedData = localStorage.getItem(STORAGE_KEY)
+        const documents = storedData ? JSON.parse(storedData) : {}
+        documents[id] = newDocument
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(documents))
+        router.push('/')
+      } catch (e) {
+        console.error('Failed to save document:', e)
+        alert('文書の保存に失敗しました')
+      }
     }
 
+    const loadDocument = () => {
+      if (!isEditing.value) return
+
+      const id = route.params.id
+      const storedData = localStorage.getItem(STORAGE_KEY)
+      if (storedData) {
+        try {
+          const documents = JSON.parse(storedData)
+          const document = documents[id]
+          if (document) {
+            documentId.value = id
+            displayName.value = document.displayName
+            description.value = document.description || ''
+            url.value = document.url || ''
+            tweets.value = document.tweets.map(tweet => ({
+              ...tweet,
+              id: tweet.id || uuidv4().substring(0, 8)
+            }))
+          }
+        } catch (e) {
+          console.error('Failed to load document:', e)
+        }
+      }
+    }
+
+    onMounted(() => {
+      loadDocument()
+    })
+
     return {
-      documentId,
-      title,
-      date,
+      isEditing,
+      displayName,
+      tweets,
       description,
-      sourceUrl,
-      articles,
+      url,
       isValid,
-      addArticle,
-      removeArticle,
-      saveRevision
+      addTweet,
+      removeTweet,
+      saveDocument,
+      formatContent
     }
   }
 }
 </script>
 
 <style scoped>
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
+.editor-page {
+  min-height: 100vh;
+  background-color: #f7f9fa;
 }
 
-.modal-content {
-  background-color: white;
-  border-radius: 8px;
-  width: 90%;
-  max-width: 800px;
-  max-height: 90vh;
-  overflow-y: auto;
-}
-
-.modal-header {
+.page-header {
+  background-color: #ffffff;
   padding: 20px;
   border-bottom: 1px solid #e1e8ed;
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 20px;
 }
 
-.modal-header h2 {
+.back-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #1da1f2;
+  text-decoration: none;
+  font-size: 16px;
+}
+
+.back-link:hover {
+  color: #1991db;
+}
+
+h1 {
   margin: 0;
-  font-size: 1.5em;
+  font-size: 24px;
+  color: #14171a;
 }
 
-.close-button {
-  background: none;
-  border: none;
-  font-size: 1.5em;
-  cursor: pointer;
-  color: #657786;
+.page-content {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 40px 20px;
 }
 
-.modal-body {
-  padding: 20px;
+.editor-form {
+  background-color: #ffffff;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .form-group {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .form-group label {
@@ -241,10 +306,11 @@ export default {
 
 .form-control {
   width: 100%;
-  padding: 8px 12px;
+  padding: 12px;
   border: 1px solid #e1e8ed;
-  border-radius: 4px;
+  border-radius: 8px;
   font-size: 16px;
+  background-color: #ffffff;
 }
 
 .form-control:focus {
@@ -253,58 +319,153 @@ export default {
   box-shadow: 0 0 0 2px rgba(29, 161, 242, 0.1);
 }
 
-.articles-section {
-  margin-top: 30px;
+textarea.form-control {
+  resize: vertical;
+  min-height: 100px;
 }
 
-.articles-section h3 {
-  margin-bottom: 16px;
+.input-group {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.add-article-button {
-  background-color: #1da1f2;
-  color: white;
+.format-button {
+  align-self: flex-end;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background-color: #e8f5fd;
+  color: #1da1f2;
   border: none;
-  padding: 8px 16px;
-  border-radius: 20px;
-  cursor: pointer;
+  border-radius: 16px;
   font-size: 14px;
-  margin-bottom: 20px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
 }
 
-.article-item {
-  border: 1px solid #e1e8ed;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  padding: 16px;
+.format-button:hover {
+  background-color: #d8effd;
 }
 
-.article-header {
+.format-button i {
+  font-size: 12px;
+}
+.tweets-section {
+  margin-top: 40px;
+}
+
+.section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
-.article-header h4 {
+.section-header h2 {
   margin: 0;
+  font-size: 20px;
+  color: #14171a;
 }
 
-.remove-article-button {
+.add-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background-color: #1da1f2;
+  color: white;
+  border: none;
+  border-radius: 20px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.add-button:hover {
+  background-color: #1991db;
+}
+
+.no-items {
+  text-align: center;
+  padding: 40px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  color: #657786;
+  font-style: italic;
+}
+
+.tweet-item {
+  background: #f8f9fa;
+  border: 1px solid #e1e8ed;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+.tweet-header {
+  padding: 16px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e1e8ed;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.tweet-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #14171a;
+}
+
+.remove-button {
   background: none;
   border: none;
   color: #e0245e;
   cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  transition: background-color 0.2s ease;
+}
+
+.remove-button:hover {
+  background-color: rgba(224, 36, 94, 0.1);
+}
+
+.tweet-content {
+  padding: 16px;
+}
+
+.form-actions {
+  margin-top: 40px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+}
+
+.save-button,
+.cancel-button {
+  padding: 12px 24px;
+  border-radius: 24px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .save-button {
   background-color: #1da1f2;
   color: white;
   border: none;
-  padding: 8px 24px;
-  border-radius: 20px;
-  cursor: pointer;
-  font-size: 14px;
+}
+
+.save-button:hover:not(:disabled) {
+  background-color: #1991db;
 }
 
 .save-button:disabled {
@@ -312,20 +473,78 @@ export default {
   cursor: not-allowed;
 }
 
+.pre-action-buttons {
+  margin: 32px 0;
+  display: flex;
+  justify-content: center;
+}
+
+.add-tweet-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background-color: #1da1f2;
+  color: white;
+  border: none;
+  border-radius: 24px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  box-shadow: 0 2px 4px rgba(29, 161, 242, 0.2);
+}
+
+.add-tweet-button:hover {
+  background-color: #1991db;
+  box-shadow: 0 4px 8px rgba(29, 161, 242, 0.3);
+}
+
 .cancel-button {
-  background-color: #fff;
+  background-color: white;
   color: #1da1f2;
   border: 1px solid #1da1f2;
-  padding: 8px 24px;
-  border-radius: 20px;
-  cursor: pointer;
-  font-size: 14px;
+}
+
+.cancel-button:hover {
+  background-color: rgba(29, 161, 242, 0.1);
 }
 
 @media (max-width: 768px) {
-  .modal-content {
-    width: 95%;
-    max-height: 95vh;
+  .page-header {
+    padding: 16px;
+  }
+
+  .page-content {
+    padding: 20px;
+  }
+
+  .editor-form {
+    padding: 16px;
+  }
+
+  .tweet-header {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .tweet-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .form-actions {
+    flex-direction: column-reverse;
+    gap: 12px;
+  }
+
+  .save-button,
+  .cancel-button {
+    width: 100%;
+  }
+
+  .add-tweet-button {
+    width: 100%;
+    justify-content: center;
   }
 }
 </style>
