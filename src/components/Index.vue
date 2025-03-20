@@ -1,5 +1,34 @@
 <template>
   <div class="page">
+    <aside class="sidebar">
+      <div class="sidebar-buttons">
+        <router-link to="/document/new" class="action-button primary-button sidebar-button">
+          <i class="fas fa-plus"></i>
+          <span>新規文書を作成</span>
+        </router-link>
+        <router-link to="/lists" class="action-button primary-button sidebar-button">
+          <i class="fas fa-list"></i>
+          <span>リスト一覧</span>
+        </router-link>
+        <router-link to="/public-comment/new" class="action-button primary-button sidebar-button">
+          <i class="fas fa-plus"></i>
+          <span>パブリックコメントを追加</span>
+        </router-link>
+        <button class="action-button secondary-button sidebar-button" @click="downloadDocuments">
+          <i class="fas fa-download"></i>
+          <span>JSONをダウンロード</span>
+        </button>
+        <button class="action-button secondary-button sidebar-button" @click="showJsonDiffViewer">
+          <i class="fas fa-code"></i>
+          <span>JSON差分を表示</span>
+        </button>
+        <button class="action-button warning-button sidebar-button" @click="resetToDefault">
+          <i class="fas fa-sync-alt"></i>
+          <span>データをリセット</span>
+        </button>
+      </div>
+    </aside>
+
     <div class="container">
       <header class="page-header">
         <h1>法律文書一覧</h1>
@@ -69,37 +98,6 @@
           </div>
         </div>
       </div>
-
-      <footer class="footer">
-        <div class="footer-content">
-          <div class="footer-buttons">
-            <router-link to="/document/new" class="action-button primary-button">
-              <i class="fas fa-plus"></i>
-              <span>新規文書を作成</span>
-            </router-link>
-            <router-link to="/lists" class="action-button primary-button">
-              <i class="fas fa-list"></i>
-              <span>リスト一覧</span>
-            </router-link>
-            <router-link to="/public-comment/new" class="action-button primary-button">
-              <i class="fas fa-plus"></i>
-              <span>パブリックコメントを追加</span>
-            </router-link>
-            <button class="action-button secondary-button" @click="downloadDocuments">
-              <i class="fas fa-download"></i>
-              <span>JSONをダウンロード</span>
-            </button>
-            <button class="action-button secondary-button" @click="showJsonDiffViewer">
-              <i class="fas fa-code"></i>
-              <span>JSON差分を表示</span>
-            </button>
-            <button class="action-button warning-button" @click="resetToDefault">
-              <i class="fas fa-sync-alt"></i>
-              <span>データをリセット</span>
-            </button>
-          </div>
-        </div>
-      </footer>
     </div>
 
     <json-diff-viewer
@@ -347,17 +345,98 @@ export default {
 <style scoped>
 @import '../styles/common.css';
 
-.documents-grid {
+.page {
+  min-height: 100vh;
+  background-color: #f7f9fa;
+  display: flex;
+}
+
+.container {
+  flex: 1;
+  padding: 20px 40px;
+  margin-left: 280px;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(700px, 1fr));
   gap: 20px;
+}
+
+.page-header {
+  background-color: #1da1f2;
+  color: #ffffff;
+  padding: 20px 40px;
+  position: relative;
+  border-radius: 12px 12px 0 0;
+  margin-bottom: 0;
+  display: flex;
+  align-items: center;
+  grid-column: 1 / -1;
+}
+
+.page-header h1 {
+  margin: 0;
+  font-size: 24px;
+  flex: 1;
+  text-align: left;
+  word-break: break-word;
+}
+
+.search-container {
   margin: 20px 0;
+  padding: 0;
+  grid-column: 1 / -1;
+}
+
+.search-input {
+  width: 100%;
+  padding: 12px 20px;
+  border: 2px solid #e1e8ed;
+  border-radius: 30px;
+  font-size: 16px;
+  transition: all 0.3s ease;
+}
+
+.documents-grid {
+  display: contents;
+}
+
+.card {
+  width: 100%;
+  background-color: #ffffff;
+  border: 1px solid #e1e8ed;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar {
+  width: 280px;
+  background-color: #ffffff;
+  border-right: 1px solid #e1e8ed;
+  padding: 20px;
+  position: fixed;
+  height: 100vh;
+  overflow-y: auto;
+  left: 0;
+  top: 0;
+  z-index: 100;
+}
+
+.sidebar-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sidebar-button {
+  width: 100%;
+  justify-content: flex-start;
+  padding: 12px 16px;
 }
 
 .document-header {
   display: flex;
   align-items: center;
-  padding: 16px;
+  padding: 20px;
   text-decoration: none;
   color: inherit;
   background: #f7f9fa;
@@ -408,13 +487,13 @@ export default {
 }
 
 .document-actions {
-  padding: 12px 16px;
+  padding: 16px 20px;
   display: flex;
-  gap: 12px;
+  gap: 16px;
 }
 
 .search-matches {
-  padding: 8px 16px;
+  padding: 12px 20px;
 }
 
 .match-item {
@@ -472,9 +551,10 @@ export default {
 
 .footer-buttons {
   display: flex;
-  justify-content: center;
-  gap: 16px;
+  justify-content: flex-start;
+  gap: 12px;
   flex-wrap: wrap;
+  padding: 0 20px;
 }
 
 .warning-button {
@@ -488,12 +568,50 @@ export default {
 }
 
 @media (max-width: 768px) {
-  .documents-grid {
+  .page {
+    flex-direction: column;
+  }
+
+  .container {
+    margin-left: 0;
+    padding: 10px;
     grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .page-header {
+    padding: 15px 20px;
+  }
+
+  .page-header h1 {
+    font-size: 18px;
+  }
+
+  .search-container {
+    margin: 16px 0;
+  }
+
+  .sidebar {
+    width: 100%;
+    height: auto;
+    position: relative;
+    border-right: none;
+    border-bottom: 1px solid #e1e8ed;
+  }
+
+  .sidebar-buttons {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .sidebar-button {
+    width: auto;
+    min-width: 200px;
   }
 
   .document-header {
-    padding: 12px;
+    padding: 16px;
   }
 
   .document-icon {
@@ -508,17 +626,29 @@ export default {
   }
 
   .document-actions {
+    padding: 12px 16px;
     flex-direction: column;
+    gap: 12px;
+  }
+
+  .search-matches {
+    padding: 8px 16px;
   }
 
   .footer-buttons {
+    padding: 0 10px;
     gap: 8px;
+  }
+
+  .action-button {
+    width: auto;
+    min-width: 200px;
   }
 }
 
 @media (min-width: 1920px) {
   .documents-grid {
-    grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(800px, 1fr));
   }
 }
 </style>
